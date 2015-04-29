@@ -87,13 +87,13 @@ void* thread_udp(void *arg) {
 
 	if( udp->CreateSocket() == 0 ) {
 		printf("socket creating error \n");
-		return;
+		return NULL;
 	}
 	printf("create listening Socket\n");
 
 	if( udp->BindSocket() == 0 ) {
 		printf("binding error");	
-		return;
+		return NULL;
 	}
 	printf("bind success \n");
 

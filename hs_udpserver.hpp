@@ -1,6 +1,11 @@
 #ifndef _HS_EXTERN_H__
 #define _HS_EXTERN_H__
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
 #define HS_UDP_PORT 9949
 
 
