@@ -19,6 +19,7 @@ int UDPServer::CreateSocket() {
 	if(sd == -1) {
 		return 0;
 	}
+	return 1;
 	
 
 }
@@ -32,7 +33,7 @@ int UDPServer::BindSocket() {
 	if(bind(sd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == -1) {	
 		return 0;
 	}
-	
+	return 1;
 
 }
 

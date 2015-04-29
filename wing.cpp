@@ -50,7 +50,7 @@ int main(int argc, char** argv){
 	}
 	
 	Mat frame, img;
-	int a = 0, b = 0;
+	unsigned long a = 0, b = 0;
 	pinMode(LED1, OUTPUT);
 	pinMode(LED2, OUTPUT);
 
@@ -60,15 +60,16 @@ int main(int argc, char** argv){
 
 		bool bSuccess = cap.read(frame);
 		
+
 		if (!bSuccess)
 		{
 			cout << "Cannot read a frame from camera" << endl;
 			break;
 		}
-
+		
 		//pyrDown(frame, img, Size(frame.cols/2, frame.rows/2));
 
-		//imshow("Output", frame);
+		imshow("Output", frame);
 
 		if (waitKey(30) == 27)
 		{
@@ -79,15 +80,16 @@ int main(int argc, char** argv){
 //		cout << cnt++ << "\t";
 //		cout << millis()-b << endl;
 		//cout <<	1000.0/(double)(millis()-b) << " fps" << endl;
+		cout << micros()-b << endl;
 		//a = clock();
-		b = millis();
+		b = micros();
 
 		//digitalWrite(LED1, 0);        
 		//digitalWrite(LED2, 0);        
 		//delay(500);
 		//digitalWrite(LED1, 1);        
 		//digitalWrite(LED2, 1);        
-		//delay(500);
+		//delay(20);
 
 		serialPutchar(fd, 'a');
 
