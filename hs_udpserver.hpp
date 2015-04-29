@@ -9,6 +9,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <iostream>
+
+using namespace std;
 
 #define HS_UDP_PORT 9949
 

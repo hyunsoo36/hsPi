@@ -95,27 +95,27 @@ int main(int argc, char** argv){
 	return 0;
 }
 
-void* thread_udp(void *arg) {
+void *thread_udp(void *arg) {
 
-	UDPServer* udp = new UDPServer();
+	UDPServer *udp = new UDPServer();
 	char *data;
 
 	if( udp->CreateSocket() == 0 ) {
-		printf("socket creating error \n");
+		cout << "socket creating error " << endl;
 		return NULL;
 	}
-	printf("create listening Socket\n");
+	cout << "create listening Socket" << endl;
 
 	if( udp->BindSocket() == 0 ) {
-		printf("binding error");	
+		cout << "binding error" << endl;
 		return NULL;
 	}
-	printf("bind success \n");
+	cout << "bind success " << endl;
 
 	while(1) {
 		
 		data = udp->ReceiveData();
-		printf("udp : %s\n", data);
+		cout << "udp : " << data << endl;
 
 	}
 }
