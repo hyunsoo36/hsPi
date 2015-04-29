@@ -10,9 +10,12 @@ UDPServer::~UDPServer() {
 }
 
 int UDPServer::CreateSocket() {
-
+	int opt = 1;
+	
 	// Create socket
 	sd = socket(PF_INET, SOCK_DGRAM, 0);
+	setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	
 	if(sd == -1) {
 		return 0;
 	}
@@ -23,10 +26,13 @@ int UDPServer::BindSocket() {
 
 	// Bind socket to local address and port
 	memset(&serverAddr, 0, sizeof(serverAddr));
+	printf("1\n");
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);		// Default address
-	serverAddr.sin_port = htons(atoi(argv[1]));				// We assume port 7
+	serverAddr.sin_port = htons(HS_UDP_PORT);				// We assume port 9949
+	printf("2\n");
 	if(bind(sd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == -1) {		
+		printf("3\n");
 		return 0;
 	}
 

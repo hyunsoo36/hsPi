@@ -1,6 +1,10 @@
 #ifndef _HS_EXTERN_H__
 #define _HS_EXTERN_H__
 
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -21,7 +25,7 @@ private:
 	char buffer[20];						// Data buffer
 	struct sockaddr_in serverAddr;	// Socket address
 	struct sockaddr_in clientAddr;	// Client address
-	int clAddrLen;							// Length of client Address
+	socklen_t clAddrLen;							// Length of client Address
 	
 public:
 	UDPServer();

@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <wiringPi.h>
 #include <wiringSerial.h>
+#include <pthread.h>
 #include "hs_udpserver.hpp"
 
 #define LED1 4
@@ -16,8 +17,18 @@
 using namespace std;
 using namespace cv;
 
+void* thread_udp(void *arg);
+
 int main(int argc, char** argv){
+	
 	int fd, data;
+	pthread_t udp_thread;
+	
+	// thread
+	if(pthread_create(&udp_thread, NULL, thread_udp, NULL)) {
+		cout << "Cannot creating thread" << endl;
+		return -1;
+	}
 	
 	VideoCapture cap(-1);
 	if (!cap.isOpened())
@@ -25,8 +36,8 @@ int main(int argc, char** argv){
 		cout << "Cannot open camera" << endl;
 		return -1;
 	}
-	cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
-	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+	cap.set(CV_CAP_PROP_FRAME_WIDTH, 320);//640);
+	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 240);//480);
 
 	namedWindow("Output",CV_WINDOW_AUTOSIZE);
 
@@ -57,15 +68,19 @@ int main(int argc, char** argv){
 
 		//pyrDown(frame, img, Size(frame.cols/2, frame.rows/2));
 
-		imshow("Output", frame);
+		//imshow("Output", frame);
 
 		if (waitKey(30) == 27)
 		{
 			cout << "Exit" << endl;
 			break;
 		}
-		cout << clock()-a << endl;
-		a = clock();
+		
+//		cout << cnt++ << "\t";
+//		cout << millis()-b << endl;
+		//cout <<	1000.0/(double)(millis()-b) << " fps" << endl;
+		//a = clock();
+		b = millis();
 
 		//digitalWrite(LED1, 0);        
 		//digitalWrite(LED2, 0);        
