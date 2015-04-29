@@ -83,7 +83,7 @@ int main(int argc, char** argv){
 		cout << micros()-b << endl;
 		//a = clock();
 		b = micros();
-
+		
 		//digitalWrite(LED1, 0);        
 		//digitalWrite(LED2, 0);        
 		//delay(500);
