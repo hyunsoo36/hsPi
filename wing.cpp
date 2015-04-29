@@ -80,5 +80,28 @@ int main(int argc, char** argv){
 	return 0;
 }
 
+void* thread_udp(void *arg) {
 
+	UDPServer* udp = new UDPServer();
+	char *data;
+
+	if( udp->CreateSocket() == 0 ) {
+		printf("socket creating error \n");
+		return;
+	}
+	printf("create listening Socket\n");
+
+	if( udp->BindSocket() == 0 ) {
+		printf("binding error");	
+		return;
+	}
+	printf("bind success \n");
+
+	while(1) {
+		
+		data = udp->ReceiveData();
+		printf("udp : %s\n", data);
+
+	}
+}
 
