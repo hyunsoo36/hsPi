@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 CC = gcc
 CXX = g++
 CFLAGS = -pipe -Wall -W -O2 -DNO_DEBUG
@@ -30,3 +31,6 @@ clean:
 
 
 
+=======
+g++ -lwiringPi -lopencv_core -lopencv_highgui -L/usr/lib/uv4l/uv4lext/armv6l-luv4lext -Wl,-rpath,'/usr/lib/uv4l/uv4lext/armv6l' wing.cpp -o wing
+>>>>>>> 8158558443c13807c48c24d2279f66cb5e5c3f63
