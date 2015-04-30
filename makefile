@@ -7,10 +7,10 @@ OPENCVFLAGS = -lopencv_core -lopencv_highgui
 RASPIFLAGS = -L/usr/lib/uv4l/uv4lext/armv6l-luv4lext -Wl,-rpath,'/usr/lib/uv4l/uv4lext/armv6l'
 THREADPLAGS = -lpthread
 
-SOURCES		=	wing.cpp		hs_udpserver.cpp\
+SOURCES		=	wing.cpp	hs_udpserver.cpp	hs_serial.cpp\
 
 
-OBJECTS		=	wing.o			hs_udpserver.o\
+OBJECTS		=	wing.o		hs_udpserver.o		hs_serial.o\
 
 
 TARGET		=	wing
@@ -24,6 +24,9 @@ wing.o : wing.cpp
 		
 hs_udpserver.o : hs_udpserver.cpp
 	$(CXX) -c hs_udpserver.cpp
+
+hs_serial.o : hs_serial.cpp
+	$(CXX) -c hs_serial.cpp
 
 clean: 
 	-rm -f $(OBJECTS) $(TARGET) \

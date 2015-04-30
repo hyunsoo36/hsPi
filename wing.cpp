@@ -10,6 +10,7 @@
 #include <wiringSerial.h>
 #include <pthread.h>
 #include "hs_udpserver.hpp"
+#include "hs_serial.hpp"
 
 #define LED1 4
 #define LED2 5
@@ -41,13 +42,9 @@ int main(int argc, char** argv){
 
 	namedWindow("Output",CV_WINDOW_AUTOSIZE);
 
-	if( wiringPiSetup() == -1 ) {
-		return 1;
-	}
-	if((fd = serialOpen("/dev/ttyAMA0", 115200)) < 0) {
-		fprintf(stderr, "Unable to open serial device: %s\n", strerror(errno));
-		return 1;
-	}
+	SerialhsWing *hsSerial = new SerialhsWing();
+
+	hsSerial->initSerial();
 	
 	Mat frame, img;
 	unsigned long a = 0, b = 0;
@@ -91,7 +88,10 @@ int main(int argc, char** argv){
 		//digitalWrite(LED2, 1);        
 		//delay(20);
 
-		serialPutchar(fd, 'a');
+		char tmpStr[10] = "Hello hs\n";
+		hsSerial->makePacket(tmpStr, 9);
+		hsSerial->sendPacket();
+		
 
 	}
 	return 0;
