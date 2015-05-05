@@ -95,7 +95,7 @@ int main(int argc, char** argv){
 		//delay(20);
 		
 		
-		double roll = 10.3, pitch = 2.5, yaw = 36.4, alt = 80.0;
+		double roll = -10.3, pitch = -2.5, yaw = -36.4, alt = 80.0;
 		char tmpStr[8];
 		tmpStr[0] = (char)(( ((short)(roll*10.0)) & 0xFF00 ) >> 8);
 		tmpStr[1] = (char)(( ((short)(roll*10.0)) & 0x00FF ) >> 0);
