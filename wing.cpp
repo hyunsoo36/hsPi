@@ -16,6 +16,7 @@
 
 
 #define LOOP_TIME 66 // [ms]
+#define SERIAL_TIME 50
 
 using namespace std;
 using namespace cv;
@@ -112,11 +113,11 @@ int main(int argc, char** argv){
 		int recvDataLen;
 		recvDataLen = hsSerial->recvPacket(recvData);
 		if( recvDataLen == -1 ) {
-			//cout << "serial error..." << endl;
+			cout << "serial error..." << endl;
 		}else if( recvDataLen == 0 ) {
 			
 		}else if( recvDataLen == 9999 ) {
-			//cout << "Serial Buffer is Full" << endl;
+			
 		}else {
 			for(int i=0; i<3; i++) {
 				//cout << (int)recvData[i] <<  "\t";

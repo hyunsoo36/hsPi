@@ -1,4 +1,5 @@
 #include "hs_serial.hpp"
+#include <string.h>
 
 SerialhsWing::SerialhsWing() {
 	
@@ -41,36 +42,41 @@ int SerialhsWing::sendPacket() {
 }
 int SerialhsWing::recvPacket(char* data) {
 		
-	char recv_packet[HS_PACKET_LENGTH_MAX] = {0, };
-	int packet_len = serialDataAvail(fd);
+	//char recv_buffer[HS_BUFFER_LENGTH] = {0, };
+	int serial_len = serialDataAvail(fd);
 
 	//cout << "packet length : " << packet_len << endl;
 	
-	if( packet_len == -1 ) {
+	if( serial_len == -1 ) {
 		return -1;
-	}else if( packet_len == 0 ) {
+	}else if( serial_len == 0 ) {
 		return 0;
-	}else if( packet_len > HS_PACKET_LENGTH_MAX ) {
-		serialFlush(fd);
+	}else if( serial_len > HS_BUFFER_LENGTH ) {
+		char tmp[1024];
+		read(fd, tmp, serial_len);
+		cout << serial_len << " : Serial Buffer is Full" << endl;
 		return 9999;
 	}
 	
-	read(fd, recv_packet, packet_len);
-	/*
-	for(int i=0; i<packet_len; i++) {
-		//recv_packet[i] = serialGetchar(fd);
-		cout << (unsigned int)recv_packet[i] << "\t";
+	read(fd, serial_buf, serial_len);
+	memcpy( &buffer[0], &buffer[serial_len], HS_BUFFER_LENGTH-serial_len );
+	memcpy( &buffer[HS_BUFFER_LENGTH-serial_len], &serial_buf[0], serial_len );
+	
+	
+	for(int i=0; i<HS_BUFFER_LENGTH; i++) {
+		//buffer[i] = serialGetchar(fd);
+		cout << (unsigned int)buffer[i] << "\t";
 	}
 	cout << endl;
-	*/
-	/*
+	
+	
 	// check packet form
-	if( recv_packet[0] == HS_PACKET_HEADER1 && recv_packet[1] == HS_PACKET_HEADER2 ) {	// head
-		if( recv_packet[3+recv_packet[3]] == HS_PACKET_TAIL ) {	// tail
-			for(int i=0; i<recv_packet[3]; i++) {
-				data[i] = recv_packet[3+i];
+	if( buffer[0] == HS_PACKET_HEADER1 && buffer[1] == HS_PACKET_HEADER2 ) {	// head
+		if( buffer[3+buffer[3]] == HS_PACKET_TAIL ) {	// tail
+			for(int i=0; i<buffer[3]; i++) {
+				data[i] = buffer[3+i];
 			}
-			return recv_packet[3];
+			return buffer[3];
 		}else {
 			return 0;
 		}
@@ -78,7 +84,7 @@ int SerialhsWing::recvPacket(char* data) {
 	}else {
 		return 0;
 	}
-		*/
+		
 	
 	
 }
