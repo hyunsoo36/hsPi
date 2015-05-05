@@ -25,7 +25,7 @@ void *thread_udp(void *arg);
 void *thread_serial(void *arg);
 void *thread_cv(void *arg);
 
-bool run_cv_th = false;
+bool run_udp_th = false;
 bool run_serial_th = false;
 bool run_cv_th = false;
 
@@ -42,15 +42,15 @@ int main(int argc, char** argv){
 	int fd, data;
 	pthread_t udp_thread, serial_thread, cv_thread;
 
-	cap = new cap(-1);
+	cap = new VideoCapture(-1);
 
-	if (!cap.isOpened()) {
+	if(!cap->isOpened()) {
 		cout << "Cannot open camera" << endl;
 		return -1;
 	}
 
-	cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
-	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+	cap->set(CV_CAP_PROP_FRAME_WIDTH, 640);
+	cap->set(CV_CAP_PROP_FRAME_HEIGHT, 480);
 
 	namedWindow("Output",CV_WINDOW_AUTOSIZE);
 
@@ -154,7 +154,7 @@ int main(int argc, char** argv){
 void *thread_cv(void *arg) {
 	while(1) {
 		//if( run_cv_th == true ) {
-			bool bSuccess = cap.read(frame);
+			bool bSuccess = cap->read(frame);
 
 			if (!bSuccess)
 			{
@@ -205,7 +205,7 @@ void *thread_serial(void *arg) {
 			//cout << "" << endl;
 		}
 
-		delay(50);
+		delay(25);
 
 
 	}
