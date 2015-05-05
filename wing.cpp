@@ -21,40 +21,54 @@
 using namespace std;
 using namespace cv;
 
-void* thread_udp(void *arg);
+void *thread_udp(void *arg);
+void *thread_serial(void *arg);
+void *thread_cv(void *arg);
+
+bool run_cv_th = false;
+bool run_serial_th = false;
+bool run_cv_th = false;
 
 unsigned long ulTimeBegin = 0;
 unsigned long ulElapsedTime = 0;
 
+double serial_time = 0;
+
+VideoCapture* cap;
+Mat frame, img;
+
 int main(int argc, char** argv){
 	
 	int fd, data;
-	pthread_t udp_thread;
-	
-	// thread
-	if(pthread_create(&udp_thread, NULL, thread_udp, NULL)) {
-		cout << "Cannot creating thread" << endl;
-		return -1;
-	}
-	
-	VideoCapture cap(-1);
-	if (!cap.isOpened())
-	{
+	pthread_t udp_thread, serial_thread, cv_thread;
+
+	cap = new cap(-1);
+
+	if (!cap.isOpened()) {
 		cout << "Cannot open camera" << endl;
 		return -1;
 	}
+
 	cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
 	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
 
 	namedWindow("Output",CV_WINDOW_AUTOSIZE);
 
-	SerialhsWing *hsSerial = new SerialhsWing();
-
-	if( hsSerial->initSerial() == -1 ) {
-		cout << "Wiring Pi init failed" << endl;
+	// thread
+	if(pthread_create(&udp_thread, NULL, thread_udp, NULL)) {
+		cout << "Cannot creating udp thread" << endl;
+		return -1;
+	}
+	if(pthread_create(&serial_thread, NULL, thread_serial, NULL)) {
+		cout << "Cannot creating serial thread" << endl;
+		return -1;
+	}
+	if(pthread_create(&cv_thread, NULL, thread_cv, NULL)) {
+		cout << "Cannot creating cv thread" << endl;
+		return -1;
 	}
 	
-	Mat frame, img;
+	
 	
 	pinMode(LED1, OUTPUT);
 	pinMode(LED2, OUTPUT);
@@ -65,14 +79,7 @@ int main(int argc, char** argv){
 		
 		ulTimeBegin = millis();
 		
-		bool bSuccess = cap.read(frame);
 		
-
-		if (!bSuccess)
-		{
-			cout << "Cannot read a frame from camera" << endl;
-			break;
-		}
 		
 		//pyrDown(frame, img, Size(frame.cols/2, frame.rows/2));
 
@@ -85,17 +92,90 @@ int main(int argc, char** argv){
 		//}
 		
 		
-		
-		
-		
 		//digitalWrite(LED1, 0);        
 		//digitalWrite(LED2, 0);        
 		//delay(500);
 		//digitalWrite(LED1, 1);        
 		//digitalWrite(LED2, 1);        
 		//delay(20);
+
+		/*
+		serial_time += ulElapsedTime;
+
+		if( serial_time > SERIAL_TIME ) {
+			serial_time = 0;
+			double roll = -10.3, pitch = -2.5, yaw = -36.4, alt = 80.0;
+			char tmpStr[8];
+			tmpStr[0] = (char)(( ((short)(roll*10.0)) & 0xFF00 ) >> 8);
+			tmpStr[1] = (char)(( ((short)(roll*10.0)) & 0x00FF ) >> 0);
+			tmpStr[2] = (char)(( ((short)(pitch*10.0)) & 0xFF00 ) >> 8);
+			tmpStr[3] = (char)(( ((short)(pitch*10.0)) & 0x00FF ) >> 0);
+			tmpStr[4] = (char)(( ((short)(yaw*10.0)) & 0xFF00 ) >> 8);
+			tmpStr[5] = (char)(( ((short)(yaw*10.0)) & 0x00FF ) >> 0);
+			tmpStr[6] = (char)(( ((short)(alt*10.0)) & 0xFF00 ) >> 8);
+			tmpStr[7] = (char)(( ((short)(alt*10.0)) & 0x00FF ) >> 0);
+			hsSerial->makePacket(tmpStr, 8);
+			hsSerial->sendPacket();
 		
+			char recvData[HS_PACKET_LENGTH_MAX];
+			int recvDataLen;
+			recvDataLen = hsSerial->recvPacket(recvData);
+			if( recvDataLen == -1 ) {
+				cout << "serial error..." << endl;
+			}else if( recvDataLen == 0 ) {
+			
+			}else if( recvDataLen == 9999 ) {
+			
+			}else {
+				for(int i=0; i<3; i++) {
+					//cout << (int)recvData[i] <<  "\t";
+				}
+				//cout << "" << endl;
+			}
+		}
+		*/
 		
+
+		// Loop Timming
+		ulElapsedTime = millis() - ulTimeBegin;
+		if( ulElapsedTime < LOOP_TIME ) {
+			delay( LOOP_TIME - ulElapsedTime );
+		}else if( ulElapsedTime > LOOP_TIME ) {
+			cout << "Wiarnning!! --- : ";
+			cout << ulElapsedTime << endl;
+			//cout <<	1000.0/(double)(millis() - ulTimeBegin) << " FPS" << endl;
+		}
+		//cout <<	1000.0/(double)(millis() - ulTimeBegin) << " FPS" << endl;
+		//cout << millis() - ulTimeBegin << endl;
+		
+	}
+	return 0;
+}
+void *thread_cv(void *arg) {
+	while(1) {
+		//if( run_cv_th == true ) {
+			bool bSuccess = cap.read(frame);
+
+			if (!bSuccess)
+			{
+				cout << "Cannot read a frame from camera" << endl;
+				break;
+			}
+		//}
+
+	}
+
+}
+void *thread_serial(void *arg) {
+
+	SerialhsWing *hsSerial = new SerialhsWing();
+
+	if( hsSerial->initSerial() == -1 ) {
+		cout << "Wiring Pi init failed" << endl;
+	}
+
+	while(1) {
+
 		double roll = -10.3, pitch = -2.5, yaw = -36.4, alt = 80.0;
 		char tmpStr[8];
 		tmpStr[0] = (char)(( ((short)(roll*10.0)) & 0xFF00 ) >> 8);
@@ -124,22 +204,11 @@ int main(int argc, char** argv){
 			}
 			//cout << "" << endl;
 		}
-		
-		
-		// Loop Timming
-		ulElapsedTime = millis() - ulTimeBegin;
-		if( ulElapsedTime < LOOP_TIME ) {
-			delay( LOOP_TIME - ulElapsedTime );
-		}else if( ulElapsedTime > LOOP_TIME ) {
-			cout << "Wiarnning!! --- : ";
-			cout << ulElapsedTime << endl;
-			//cout <<	1000.0/(double)(millis() - ulTimeBegin) << " FPS" << endl;
-		}
-		//cout <<	1000.0/(double)(millis() - ulTimeBegin) << " FPS" << endl;
-		//cout << millis() - ulTimeBegin << endl;
-		
+
+		delay(50);
+
+
 	}
-	return 0;
 }
 
 void *thread_udp(void *arg) {
@@ -160,10 +229,10 @@ void *thread_udp(void *arg) {
 	cout << "bind success " << endl;
 
 	while(1) {
-		
-		data = udp->ReceiveData();
-		cout << "udp : " << data << endl;
-
+		if( run_cv_th == true ) {
+			data = udp->ReceiveData();
+			cout << "udp : " << data << endl;
+		}
 	}
 }
 
