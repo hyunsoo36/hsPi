@@ -62,21 +62,21 @@ int SerialhsWing::recvPacket(char* data) {
 	memcpy( &buffer[0], &buffer[serial_len], HS_BUFFER_LENGTH-serial_len );
 	memcpy( &buffer[HS_BUFFER_LENGTH-serial_len], &serial_buf[0], serial_len );
 	
-	
+	/*
 	for(int i=0; i<HS_BUFFER_LENGTH; i++) {
 		//buffer[i] = serialGetchar(fd);
-		cout << (unsigned int)buffer[i] << "\t";
+		cout << (unsigned int)buffer[i] << " ";
 	}
 	cout << endl;
-	
+	*/
 	
 	// check packet form
 	if( buffer[0] == HS_PACKET_HEADER1 && buffer[1] == HS_PACKET_HEADER2 ) {	// head
-		if( buffer[3+buffer[3]] == HS_PACKET_TAIL ) {	// tail
-			for(int i=0; i<buffer[3]; i++) {
-				data[i] = buffer[3+i];
+		if( buffer[3+buffer[2]] == HS_PACKET_TAIL ) {	// tail
+			for(int i=0; i<buffer[2]; i++) {
+				data[i] = buffer[2+i];
 			}
-			return buffer[3];
+			return buffer[2];
 		}else {
 			return 0;
 		}

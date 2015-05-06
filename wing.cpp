@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <wiringPi.h>
 #include <pthread.h>
+#include <math.h>
 #include "hs_udpserver.hpp"
 #include "hs_serial.hpp"
 
@@ -25,17 +26,19 @@ void *thread_udp(void *arg);
 void *thread_serial(void *arg);
 void *thread_cv(void *arg);
 
-bool run_udp_th = false;
-bool run_serial_th = false;
-bool run_cv_th = false;
-
 unsigned long ulTimeBegin = 0;
 unsigned long ulElapsedTime = 0;
+
+double profileTime = 0;
 
 double serial_time = 0;
 
 VideoCapture* cap;
 Mat frame, img;
+
+double roll_sp, pitch_sp, yaw_sp, alt_sp;
+
+
 
 int main(int argc, char** argv){
 	
@@ -59,10 +62,12 @@ int main(int argc, char** argv){
 		cout << "Cannot creating udp thread" << endl;
 		return -1;
 	}
+	
 	if(pthread_create(&serial_thread, NULL, thread_serial, NULL)) {
 		cout << "Cannot creating serial thread" << endl;
 		return -1;
 	}
+	
 	if(pthread_create(&cv_thread, NULL, thread_cv, NULL)) {
 		cout << "Cannot creating cv thread" << endl;
 		return -1;
@@ -72,7 +77,8 @@ int main(int argc, char** argv){
 	
 	pinMode(LED1, OUTPUT);
 	pinMode(LED2, OUTPUT);
-
+	
+	//delay(5000);
 
 	while (1)
 	{
@@ -81,15 +87,6 @@ int main(int argc, char** argv){
 		
 		
 		
-		//pyrDown(frame, img, Size(frame.cols/2, frame.rows/2));
-
-		//imshow("Output", frame);
-
-		//if (waitKey(33) == 27)
-		//{
-		//	cout << "Exit" << endl;
-		//	break;
-		//}
 		
 		
 		//digitalWrite(LED1, 0);        
@@ -98,42 +95,15 @@ int main(int argc, char** argv){
 		//digitalWrite(LED1, 1);        
 		//digitalWrite(LED2, 1);        
 		//delay(20);
-
-		/*
-		serial_time += ulElapsedTime;
-
-		if( serial_time > SERIAL_TIME ) {
-			serial_time = 0;
-			double roll = -10.3, pitch = -2.5, yaw = -36.4, alt = 80.0;
-			char tmpStr[8];
-			tmpStr[0] = (char)(( ((short)(roll*10.0)) & 0xFF00 ) >> 8);
-			tmpStr[1] = (char)(( ((short)(roll*10.0)) & 0x00FF ) >> 0);
-			tmpStr[2] = (char)(( ((short)(pitch*10.0)) & 0xFF00 ) >> 8);
-			tmpStr[3] = (char)(( ((short)(pitch*10.0)) & 0x00FF ) >> 0);
-			tmpStr[4] = (char)(( ((short)(yaw*10.0)) & 0xFF00 ) >> 8);
-			tmpStr[5] = (char)(( ((short)(yaw*10.0)) & 0x00FF ) >> 0);
-			tmpStr[6] = (char)(( ((short)(alt*10.0)) & 0xFF00 ) >> 8);
-			tmpStr[7] = (char)(( ((short)(alt*10.0)) & 0x00FF ) >> 0);
-			hsSerial->makePacket(tmpStr, 8);
-			hsSerial->sendPacket();
 		
-			char recvData[HS_PACKET_LENGTH_MAX];
-			int recvDataLen;
-			recvDataLen = hsSerial->recvPacket(recvData);
-			if( recvDataLen == -1 ) {
-				cout << "serial error..." << endl;
-			}else if( recvDataLen == 0 ) {
-			
-			}else if( recvDataLen == 9999 ) {
-			
-			}else {
-				for(int i=0; i<3; i++) {
-					//cout << (int)recvData[i] <<  "\t";
-				}
-				//cout << "" << endl;
-			}
-		}
-		*/
+		//make profile
+		profileTime += LOOP_TIME / 1000.0;
+		roll_sp = -sin(profileTime*1.57)*5;
+		pitch_sp = cos(profileTime*1.57)*5;
+		yaw_sp = 0;
+		alt_sp = 0;
+		
+		
 		
 
 		// Loop Timming
@@ -153,7 +123,9 @@ int main(int argc, char** argv){
 }
 void *thread_cv(void *arg) {
 	while(1) {
-		//if( run_cv_th == true ) {
+		/*
+		
+		if( run_cv_th == true ) {
 			bool bSuccess = cap->read(frame);
 
 			if (!bSuccess)
@@ -161,7 +133,11 @@ void *thread_cv(void *arg) {
 				cout << "Cannot read a frame from camera" << endl;
 				break;
 			}
-		//}
+		}
+		
+		*/
+		
+		delay(25);
 
 	}
 
@@ -169,25 +145,32 @@ void *thread_cv(void *arg) {
 void *thread_serial(void *arg) {
 
 	SerialhsWing *hsSerial = new SerialhsWing();
+	int sendCnt = 0;
 
 	if( hsSerial->initSerial() == -1 ) {
 		cout << "Wiring Pi init failed" << endl;
 	}
 
 	while(1) {
-
-		double roll = -10.3, pitch = -2.5, yaw = -36.4, alt = 80.0;
-		char tmpStr[8];
-		tmpStr[0] = (char)(( ((short)(roll*10.0)) & 0xFF00 ) >> 8);
-		tmpStr[1] = (char)(( ((short)(roll*10.0)) & 0x00FF ) >> 0);
-		tmpStr[2] = (char)(( ((short)(pitch*10.0)) & 0xFF00 ) >> 8);
-		tmpStr[3] = (char)(( ((short)(pitch*10.0)) & 0x00FF ) >> 0);
-		tmpStr[4] = (char)(( ((short)(yaw*10.0)) & 0xFF00 ) >> 8);
-		tmpStr[5] = (char)(( ((short)(yaw*10.0)) & 0x00FF ) >> 0);
-		tmpStr[6] = (char)(( ((short)(alt*10.0)) & 0xFF00 ) >> 8);
-		tmpStr[7] = (char)(( ((short)(alt*10.0)) & 0x00FF ) >> 0);
-		hsSerial->makePacket(tmpStr, 8);
-		hsSerial->sendPacket();
+		
+		if( sendCnt > 0 ) {
+			sendCnt = 0;
+			
+			char tmpStr[8];
+			tmpStr[0] = (char)(( ((short)(roll_sp*10.0)) & 0xFF00 ) >> 8);
+			tmpStr[1] = (char)(( ((short)(roll_sp*10.0)) & 0x00FF ) >> 0);
+			tmpStr[2] = (char)(( ((short)(pitch_sp*10.0)) & 0xFF00 ) >> 8);
+			tmpStr[3] = (char)(( ((short)(pitch_sp*10.0)) & 0x00FF ) >> 0);
+			tmpStr[4] = (char)(( ((short)(yaw_sp*10.0)) & 0xFF00 ) >> 8);
+			tmpStr[5] = (char)(( ((short)(yaw_sp*10.0)) & 0x00FF ) >> 0);
+			tmpStr[6] = (char)(( ((short)(alt_sp*10.0)) & 0xFF00 ) >> 8);
+			tmpStr[7] = (char)(( ((short)(alt_sp*10.0)) & 0x00FF ) >> 0);
+			hsSerial->makePacket(tmpStr, 8);
+			hsSerial->sendPacket();
+			
+		}else {
+			sendCnt ++;
+		}
 		
 		char recvData[HS_PACKET_LENGTH_MAX];
 		int recvDataLen;
@@ -199,10 +182,12 @@ void *thread_serial(void *arg) {
 		}else if( recvDataLen == 9999 ) {
 			
 		}else {
-			for(int i=0; i<3; i++) {
-				//cout << (int)recvData[i] <<  "\t";
+			/*
+			for(int i=0; i<recvDataLen; i++) {
+				cout << (int)recvData[i] <<  "  ";
 			}
-			//cout << "" << endl;
+			cout << "" << endl;
+			*/
 		}
 
 		delay(25);
@@ -229,10 +214,11 @@ void *thread_udp(void *arg) {
 	cout << "bind success " << endl;
 
 	while(1) {
-		if( run_cv_th == true ) {
-			data = udp->ReceiveData();
-			cout << "udp : " << data << endl;
-		}
+		data = udp->ReceiveData();
+		cout << "udp : " << data << endl;
+		
+		delay(25);
+		
 	}
 }
 
