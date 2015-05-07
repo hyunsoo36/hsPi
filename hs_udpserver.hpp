@@ -36,7 +36,7 @@ public:
 	
 	int CreateSocket();
 	int BindSocket();
-	char* ReceiveData();
+	int ReceiveData(char* udp_data);
 	
 	
 	

@@ -37,13 +37,13 @@ int UDPServer::BindSocket() {
 
 }
 
-char* UDPServer::ReceiveData() {
+int UDPServer::ReceiveData(char* udp_data) {
 	clAddrLen = sizeof(clientAddr);
-	nr = recvfrom(sd, buffer, 20, 0, (struct sockaddr*)&clientAddr, &clAddrLen);	
-	buffer[nr] = 0;
+	nr = recvfrom(sd, udp_data, 20, 0, (struct sockaddr*)&clientAddr, &clAddrLen);	
+	udp_data[nr] = 0;
 	//fputs(buffer, stdout);
 	//fputc('\n', stdout);
-	sendto(sd, buffer, nr, 0, (struct sockaddr*)&clientAddr, sizeof(clientAddr));
-	return buffer;
+	sendto(sd, udp_data, nr, 0, (struct sockaddr*)&clientAddr, sizeof(clientAddr));
+	return 1;
 
 }

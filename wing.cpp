@@ -38,6 +38,7 @@ Mat frame, img;
 
 double roll_sp, pitch_sp, yaw_sp, alt_sp;
 
+char udp_data[1024] = {0, };
 
 
 int main(int argc, char** argv){
@@ -45,17 +46,7 @@ int main(int argc, char** argv){
 	int fd, data;
 	pthread_t udp_thread, serial_thread, cv_thread;
 
-	cap = new VideoCapture(-1);
-
-	if(!cap->isOpened()) {
-		cout << "Cannot open camera" << endl;
-		return -1;
-	}
-
-	cap->set(CV_CAP_PROP_FRAME_WIDTH, 640);
-	cap->set(CV_CAP_PROP_FRAME_HEIGHT, 480);
-
-	namedWindow("Output",CV_WINDOW_AUTOSIZE);
+	
 
 	// thread
 	if(pthread_create(&udp_thread, NULL, thread_udp, NULL)) {
@@ -97,12 +88,25 @@ int main(int argc, char** argv){
 		//delay(20);
 		
 		//make profile
-		profileTime += LOOP_TIME / 1000.0;
-		roll_sp = -sin(profileTime*1.57)*5;
-		pitch_sp = cos(profileTime*1.57)*5;
+		
+		roll_sp = 0;
+		pitch_sp = 0;
 		yaw_sp = 0;
 		alt_sp = 0;
 		
+		if( udp_data[0] == 'a' ) {
+			
+			if( profileTime >= 0.0 && profileTime < 1.0 ) {
+				
+			}
+			//roll_sp = -sin(profileTime*0.392)*5;
+			//pitch_sp = cos(profileTime*0.392)*5;
+			//roll_sp = -sin(profileTime*1.57)*5;
+			//pitch_sp = cos(profileTime*1.57)*5;
+			
+			profileTime += LOOP_TIME / 1000.0;
+			
+		}
 		
 		
 
@@ -122,6 +126,19 @@ int main(int argc, char** argv){
 	return 0;
 }
 void *thread_cv(void *arg) {
+	/*
+	cap = new VideoCapture(-1);
+
+	if(!cap->isOpened()) {
+		cout << "Cannot open camera" << endl;
+		return -1;
+	}
+
+	cap->set(CV_CAP_PROP_FRAME_WIDTH, 640);
+	cap->set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+
+	namedWindow("Output",CV_WINDOW_AUTOSIZE);
+	*/
 	while(1) {
 		/*
 		
@@ -199,7 +216,7 @@ void *thread_serial(void *arg) {
 void *thread_udp(void *arg) {
 
 	UDPServer *udp = new UDPServer();
-	char *data;
+	//char *data;
 
 	if( udp->CreateSocket() == 0 ) {
 		cout << "socket creating error " << endl;
@@ -214,8 +231,8 @@ void *thread_udp(void *arg) {
 	cout << "bind success " << endl;
 
 	while(1) {
-		data = udp->ReceiveData();
-		cout << "udp : " << data << endl;
+		udp->ReceiveData(udp_data);
+		cout << "udp : " << udp_data << endl;
 		
 		delay(25);
 		
