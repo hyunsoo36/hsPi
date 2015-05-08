@@ -7,10 +7,10 @@ OPENCVFLAGS = -lopencv_core -lopencv_highgui
 RASPIFLAGS = -L/usr/lib/uv4l/uv4lext/armv6l-luv4lext -Wl,-rpath,'/usr/lib/uv4l/uv4lext/armv6l'
 THREADPLAGS = -lpthread
 
-SOURCES		=	wing.cpp	hs_udpserver.cpp	hs_serial.cpp	hs_thread.cpp\
+SOURCES		=	wing.cpp	hs_udpserver.cpp	hs_serial.cpp	\
 
 
-OBJECTS		=	wing.o		hs_udpserver.o		hs_serial.o		hs_thread.o\
+OBJECTS		=	wing.o		hs_udpserver.o		hs_serial.o		\
 
 
 TARGET		=	wing
@@ -29,7 +29,7 @@ hs_serial.o : hs_serial.cpp
 	$(CXX) -c hs_serial.cpp
 
 hs_thread.o : hs_thread.cpp
-	$(CXX) -c hs_thread.cpp
+	$(CXX) $(WIRINGPIFLAGS) $(OPENCVFLAGS) $(RASPIFLAGS) -c hs_thread.cpp
 
 clean: 
 	-rm -f $(OBJECTS) $(TARGET) \

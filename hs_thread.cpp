@@ -1,5 +1,17 @@
 #include "hs_thread.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/opencv.hpp"
+#include <iostream>
+#include <string.h>
+#include <errno.h>
+#include <wiringPi.h>
+#include "hs_udpserver.hpp"
+#include "hs_serial.hpp"
 
+extern VideoCapture* cap;
+extern Mat frame, img;
+
+extern double roll_sp, pitch_sp, yaw_sp, alt_sp;
 
 void *thread_cv(void *arg) {
 	/*
