@@ -1,6 +1,7 @@
 #ifndef _HS_SERIAL_HPP__
 #define _HS_SERIAL_HPP__
 
+
 #include <wiringPi.h>
 #include <wiringSerial.h>
 #include <iostream>
