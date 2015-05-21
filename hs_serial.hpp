@@ -9,7 +9,7 @@ using namespace std;
 
 #define HS_BUFFER_LENGTH 18
 
-#define HS_PACKET_LENGTH_MAX 12
+#define HS_PACKET_LENGTH_MAX 14
 #define HS_PACKET_HEADER1 0xEF
 #define HS_PACKET_HEADER2 0xFE
 #define HS_PACKET_TAIL 0xFF
@@ -29,7 +29,7 @@ public:
 	int makePacket(char* data, int len);
 	int sendPacket();
 	
-	int recvPacket(char* data);
+	int recvPacket(signed char* data);
 
 
 };

@@ -3,7 +3,7 @@ CXX = g++
 CFLAGS = -pipe -Wall -W -O2 -DNO_DEBUG
 CXXFLAGS = -pipe -Wall -W -O2 -DNO_DEBUG
 WIRINGPIFLAGS =  -lwiringPi
-OPENCVFLAGS = -lopencv_core -lopencv_highgui 
+OPENCVFLAGS = -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_video
 RASPIFLAGS = -L/usr/lib/uv4l/uv4lext/armv6l-luv4lext -Wl,-rpath,'/usr/lib/uv4l/uv4lext/armv6l'
 THREADPLAGS = -lpthread
 

@@ -40,7 +40,7 @@ int SerialhsWing::sendPacket() {
 	write(fd, packet, HS_PACKET_LENGTH_MAX);
 
 }
-int SerialhsWing::recvPacket(char* data) {
+int SerialhsWing::recvPacket(signed char* data) {
 		
 	//char recv_buffer[HS_BUFFER_LENGTH] = {0, };
 	int serial_len = serialDataAvail(fd);
@@ -74,7 +74,7 @@ int SerialhsWing::recvPacket(char* data) {
 	if( buffer[0] == HS_PACKET_HEADER1 && buffer[1] == HS_PACKET_HEADER2 ) {	// head
 		if( buffer[3+buffer[2]] == HS_PACKET_TAIL ) {	// tail
 			for(int i=0; i<buffer[2]; i++) {
-				data[i] = buffer[2+i];
+				data[i] = buffer[3+i];
 			}
 			return buffer[2];
 		}else {
