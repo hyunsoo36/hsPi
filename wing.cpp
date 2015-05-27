@@ -111,8 +111,8 @@ int main(int argc, char** argv){
 		
 		//make profile
 		
-		roll_sp = -3;
-		pitch_sp = -4;
+		roll_sp = 0;
+		pitch_sp = 0;
 		yaw_sp = 0;
 		alt_sp = 0;
 		
@@ -150,14 +150,12 @@ int main(int argc, char** argv){
 
 void *thread_cv(void *arg) {
 
-#if 0
+#if 1
 	double hroll, hpitch, hyaw, halt;
 	double prev_hroll, prev_hpitch;
 	double dx;
 	double Vr_x, Vr1_x, Vr2_x, Vr_y, Vr1_y, Vr2_y;
-	hroll = roll;
-	hpitch = pitch;
-	halt = alt;
+	
 	
 	VideoCapture cap(0);
 	
@@ -183,7 +181,7 @@ void *thread_cv(void *arg) {
 	int i, k, vel_cnt = 1, vel_cnt1 = 1;
 	TermCriteria termcrit(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, 0.03);
 	Size subPixWinSize(13, 13), winSize(13, 13);
-	namedWindow(rawWindow, CV_WINDOW_AUTOSIZE);
+//	namedWindow(rawWindow, CV_WINDOW_AUTOSIZE);
 //	namedWindow(robustWindow, CV_WINDOW_AUTOSIZE);
 
 	double angle;
@@ -204,7 +202,9 @@ void *thread_cv(void *arg) {
 	{
 		start=clock();
 		cap >> frame;
-		
+		hroll = roll;
+		hpitch = pitch;
+		halt = alt;
 		p2m_width = halt * tan(AOVWIDTH/2) / frame.cols/2 ;
 		p2m_height = halt * tan(AOVHEIGHT/2) / frame.rows/2 ;
 		
@@ -235,8 +235,8 @@ void *thread_cv(void *arg) {
 				
 				if(status[i] == 1)
 				{
-					line(rgbFrames, points1[i], points2[i], Scalar(0, 0, 255), 1, 1, 0);
-					circle(rgbFrames, points1[i], 2, Scalar(255, 0, 0), 1, 1, 0);
+//					line(rgbFrames, points1[i], points2[i], Scalar(0, 0, 255), 1, 1, 0);
+//					circle(rgbFrames, points1[i], 2, Scalar(255, 0, 0), 1, 1, 0);
 					nvel_x = nvel_x + (points1[i].x - points2[i].x);
 					nvel_y = nvel_y + (points1[i].y - points2[i].y);
 					vel_cnt++;
@@ -275,7 +275,10 @@ void *thread_cv(void *arg) {
 //		cout << nvel_x << " " << nvel_y << endl;
 //		cout << rvel_x << " " << rvel_y << endl;
 //		cout << rvel_x*p2m_width << " " << rvel_y*p2m_height << endl;
-		cout << velocity_x << " " << velocity_y << endl;
+		cout << hroll << " " << hpitch << " " << nvel_x << " " << nvel_y << " " << Vr_x << " " << Vr_y
+		<< " " <<velocity_x << " " << velocity_y << endl;
+//		cout << Vr1_x << " " << Vr1_y << " " << Vr2_x << " " << Vr2_y << " " << halt << endl;
+//		cout << velocity_x << " " << velocity_y << endl;
 		vel_cnt = vel_cnt1 = 1;
 		nvel_x = nvel_y = 0;
 //		imshow(rawWindow, rgbFrames);
@@ -355,8 +358,8 @@ void *thread_serial(void *arg) {
 			ay = (((short)recvData[10] << 8) | ((unsigned char)recvData[11] << 0 )) / 100.0;
 			az = (((short)recvData[12] << 8) | ((unsigned char)recvData[13] << 0 )) / 100.0;
 			//cout << (short)recvData[0] << "\t" << (unsigned char)recvData[1] << "\t" << roll << endl;
-			cout << roll << "\t" << pitch << "\t" << yaw << "\t" << alt << "\t" << ax << "\t"
-				<< ay << "\t" << az << endl;
+//			cout << roll << "\t" << pitch << "\t" << yaw << "\t" << alt << "\t" << ax << "\t"
+//				<< ay << "\t" << az << endl;
 			
 			/*
 			for(int i=0; i<recvDataLen; i++) {
