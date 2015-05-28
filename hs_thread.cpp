@@ -1,3 +1,4 @@
+#if 0
 #include "hs_thread.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/opencv.hpp"
@@ -126,3 +127,4 @@ void *thread_udp(void *arg) {
 		
 	}
 }
+#endif

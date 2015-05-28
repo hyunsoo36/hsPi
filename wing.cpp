@@ -16,7 +16,7 @@
 #include "hs_udpserver.hpp"
 #include "hs_serial.hpp"
 
-#include "hs_thread.hpp"
+//#include "hs_thread.hpp"
 
 #define LED1 4
 #define LED2 5
@@ -150,7 +150,7 @@ int main(int argc, char** argv){
 
 void *thread_cv(void *arg) {
 
-#if 1
+#if 0
 	double hroll, hpitch, hyaw, halt;
 	double prev_hroll, prev_hpitch;
 	double dx;
