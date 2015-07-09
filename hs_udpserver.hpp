@@ -13,7 +13,9 @@
 
 using namespace std;
 
-#define HS_UDP_PORT 9949
+#define HS_UDP_PORT 		9949
+
+
 
 
 class UDPServer {
@@ -37,6 +39,7 @@ public:
 	int CreateSocket();
 	int BindSocket();
 	int ReceiveData(char* udp_data);
+
 	
 	
 	

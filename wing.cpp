@@ -10,18 +10,18 @@
 #include <iostream>
 #include <string.h>
 #include <errno.h>
-#include <wiringPi.h>
 #include <pthread.h>
 #include <math.h>
+#include "wiringPi.h"
 #include "hs_udpserver.hpp"
 #include "hs_serial.hpp"
 
 //#include "hs_thread.hpp"
 
-#define LED1 4
+#define LED1 1
 #define LED2 5
 
-#define WIRELESS_DEBUGGING
+//#define WIRELESS_DEBUGGING
 
 #define LOOP_TIME 66 // [ms]
 #define SERIAL_TIME 50
@@ -47,6 +47,9 @@ void *thread_udp(void *arg);
 void *thread_serial(void *arg);
 void *thread_cv(void *arg);
 
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
 unsigned long ulTimeBegin = 0;
 unsigned long ulElapsedTime = 0;
 
@@ -61,6 +64,8 @@ double roll_sp, pitch_sp, yaw_sp, alt_sp;
 double roll, pitch, yaw, alt, ax, ay, az;
 
 char udp_data[1024] = {0, };
+
+int iLed = 0;
 
 
 int main(int argc, char** argv){
@@ -88,8 +93,7 @@ int main(int argc, char** argv){
 	
 	
 	
-	pinMode(LED1, OUTPUT);
-	pinMode(LED2, OUTPUT);
+	
 	
 	//delay(5000);
 
@@ -102,7 +106,7 @@ int main(int argc, char** argv){
 		
 		
 		
-		//digitalWrite(LED1, 0);        
+		      
 		//digitalWrite(LED2, 0);        
 		//delay(500);
 		//digitalWrite(LED1, 1);        
@@ -111,10 +115,10 @@ int main(int argc, char** argv){
 		
 		//make profile
 		
-		roll_sp = 0;
-		pitch_sp = 0;
-		yaw_sp = 0;
-		alt_sp = 0;
+		//roll_sp = 4;
+		//pitch_sp = 5;
+		//yaw_sp = 0;
+		//alt_sp = 0;
 		
 		if( udp_data[0] == 'a' ) {
 			
@@ -145,12 +149,16 @@ int main(int argc, char** argv){
 		//cout << millis() - ulTimeBegin << endl;
 		
 	}
+	
+	pthread_mutex_destroy(&mutex);
+	
 	return 0;
 }
 
 void *thread_cv(void *arg) {
 
 #if 0
+
 	double hroll, hpitch, hyaw, halt;
 	double prev_hroll, prev_hpitch;
 	double dx;
@@ -251,7 +259,7 @@ void *thread_cv(void *arg) {
 					vel_cnt1++;
 				}
 				*/
-//				line(rgbFrames, points1[i], points2[i], Scalar(0, 0, 255), 1, 1, 0);
+				line(rgbFrames, points1[i], points2[i], Scalar(0, 0, 255), 1, 1, 0);
 //				circle(rgbFrames, points1[i], 2, Scalar(255, 0, 0), 1, 1, 0);
 
 //				cout << sqrt( pow((points2[i].x - points1[i].x), 2) + pow((points2[i].y - points1[i].y), 2) ) << endl;
@@ -293,7 +301,7 @@ void *thread_cv(void *arg) {
 		
 		grayFrames.copyTo(prevGrayFrame);
 
-		keyPressed = waitKey(10);
+		keyPressed = waitKey(5);
 		if (keyPressed == 27) {
 			break;
 		} else if (keyPressed == 'r') {
@@ -311,34 +319,42 @@ void *thread_cv(void *arg) {
 
 }
 void *thread_serial(void *arg) {
-
+	
 	SerialhsWing *hsSerial = new SerialhsWing();
 	int sendCnt = 0;
 
 	if( hsSerial->initSerial() == -1 ) {
 		cout << "Wiring Pi init failed" << endl;
+		
+	}else {
+		cout << "Wiring Pi init success" << endl;
 	}
-	cout << "Wiring Pi init success" << endl;
 
 	while(1) {
+		
 		if( sendCnt > 0 ) {
 			sendCnt = 0;
 			
 			char tmpStr[8];
-			tmpStr[0] = (char)(( ((short)(roll_sp*10.0)) & 0xFF00 ) >> 8);
-			tmpStr[1] = (char)(( ((short)(roll_sp*10.0)) & 0x00FF ) >> 0);
-			tmpStr[2] = (char)(( ((short)(pitch_sp*10.0)) & 0xFF00 ) >> 8);
-			tmpStr[3] = (char)(( ((short)(pitch_sp*10.0)) & 0x00FF ) >> 0);
-			tmpStr[4] = (char)(( ((short)(yaw_sp*10.0)) & 0xFF00 ) >> 8);
-			tmpStr[5] = (char)(( ((short)(yaw_sp*10.0)) & 0x00FF ) >> 0);
+			
+			//pthread_mutex_lock(&mutex);
+			tmpStr[0] = (char)(( ((short)(roll_sp)) & 0xFF00 ) >> 8);
+			tmpStr[1] = (char)(( ((short)(roll_sp)) & 0x00FF ) >> 0);
+			tmpStr[2] = (char)(( ((short)(pitch_sp)) & 0xFF00 ) >> 8);
+			tmpStr[3] = (char)(( ((short)(pitch_sp)) & 0x00FF ) >> 0);
+			tmpStr[4] = (char)(( ((short)(yaw_sp)) & 0xFF00 ) >> 8);
+			tmpStr[5] = (char)(( ((short)(yaw_sp)) & 0x00FF ) >> 0);
 			tmpStr[6] = (char)(( ((short)(alt_sp*10.0)) & 0xFF00 ) >> 8);
 			tmpStr[7] = (char)(( ((short)(alt_sp*10.0)) & 0x00FF ) >> 0);
+			//pthread_mutex_unlock(&mutex);
+			
 			hsSerial->makePacket(tmpStr, 8);
 			hsSerial->sendPacket();
 			
 		}else {
 			sendCnt ++;
 		}
+		
 		
 		signed char recvData[HS_PACKET_LENGTH_MAX];
 		int recvDataLen;
@@ -369,7 +385,7 @@ void *thread_serial(void *arg) {
 			*/
 		}
 #ifndef WIRELESS_DEBUGGING
-		delay(25);
+		delay(30);
 #else
 		delay(5);
 #endif
@@ -380,6 +396,7 @@ void *thread_serial(void *arg) {
 
 void *thread_udp(void *arg) {
 
+	int recvLen = 0;
 	UDPServer *udp = new UDPServer();
 	//char *data;
 
@@ -396,10 +413,19 @@ void *thread_udp(void *arg) {
 	cout << "bind success " << endl;
 
 	while(1) {
-		udp->ReceiveData(udp_data);
-		cout << "udp : " << udp_data << endl;
+
+		recvLen = udp->ReceiveData(udp_data);
 		
-		delay(25);
+		//pthread_mutex_lock(&mutex);
+		roll_sp = (double)((int)((signed char)udp_data[0]));
+		pitch_sp = (double)((int)((signed char)udp_data[1]));
+		//pthread_mutex_unlock(&mutex);
+		
+		cout << "data[0] : " << (int)((signed char)udp_data[0])  << "\t";
+		cout << "data[1] : " << (int)((signed char)udp_data[1])  << "\t";
+		cout << "data[2] : " << (int)((signed char)udp_data[2]) << endl;
+
+		delay(20);
 		
 	}
 }

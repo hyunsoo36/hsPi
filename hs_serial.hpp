@@ -9,11 +9,12 @@ using namespace std;
 
 #define HS_BUFFER_LENGTH 18
 
-#define HS_PACKET_LENGTH_MAX 14
+#define HS_PACKET_LENGTH_MAX 12
 #define HS_PACKET_HEADER1 0xEF
 #define HS_PACKET_HEADER2 0xFE
 #define HS_PACKET_TAIL 0xFF
 
+#define SERIAL_LED 1
 
 class SerialhsWing {
 private:
@@ -21,6 +22,7 @@ private:
 	char packet[HS_PACKET_LENGTH_MAX];
 	char serial_buf[HS_BUFFER_LENGTH];
 	char buffer[HS_BUFFER_LENGTH];
+	int iSerialLed;
 public:
 	SerialhsWing();
 	~SerialhsWing();
