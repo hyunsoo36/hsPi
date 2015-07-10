@@ -53,8 +53,8 @@ int SerialhsWing::sendPacket() {
 	//serialPuts(fd, packet);
 	write(fd, packet, HS_PACKET_LENGTH_MAX);
 	
-	digitalWrite(SERIAL_LED, iLed);  
-	iLed = (iLed == 1) ? 0 : 1;
+	digitalWrite(SERIAL_LED, iSerialLed);  
+	iSerialLed = (iSerialLed == 1) ? 0 : 1;
 
 }
 int SerialhsWing::recvPacket(signed char* data) {
@@ -71,7 +71,7 @@ int SerialhsWing::recvPacket(signed char* data) {
 	}else if( serial_len > HS_BUFFER_LENGTH ) {
 		char tmp[1024];
 		read(fd, tmp, serial_len);
-		cout << serial_len << " : Serial Buffer is Full" << endl;
+		//cout << serial_len << " : Serial Buffer is Full" << endl;
 		return 9999;
 	}
 	read(fd, serial_buf, serial_len);

@@ -65,16 +65,22 @@ double roll, pitch, yaw, alt, ax, ay, az;
 
 char udp_data[1024] = {0, };
 
-int iLed = 0;
+int udp_err_flag = 0;
 
 
 int main(int argc, char** argv){
 	
 	int fd, data;
 	pthread_t udp_thread, serial_thread, cv_thread;
-
 	
-
+	// UDP waiting
+	UDPServer *tmp_udp = new UDPServer();
+	while( tmp_udp->CreateSocket() == 0 ) {
+			delay(50);
+	}
+	
+	
+	
 	// thread
 	if(pthread_create(&udp_thread, NULL, thread_udp, NULL)) {
 		cout << "Cannot creating udp thread" << endl;
@@ -331,7 +337,7 @@ void *thread_serial(void *arg) {
 	}
 
 	while(1) {
-		
+		if(udp_err_flag==1) break;
 		if( sendCnt > 0 ) {
 			sendCnt = 0;
 			
@@ -364,7 +370,7 @@ void *thread_serial(void *arg) {
 		}else if( recvDataLen == 0 ) {
 			//cout << "serial 0" << endl;
 		}else if( recvDataLen == 9999 ) {
-			cout << "serial 9999" << endl;
+			//cout << "serial 9999" << endl;
 		}else {
 			roll = (((short)recvData[0] << 8) | ((unsigned char)recvData[1] << 0 )) / 10.0;
 			pitch = (((short)recvData[2] << 8) | ((unsigned char)recvData[3] << 0 )) / 10.0;
@@ -374,8 +380,8 @@ void *thread_serial(void *arg) {
 			ay = (((short)recvData[10] << 8) | ((unsigned char)recvData[11] << 0 )) / 100.0;
 			az = (((short)recvData[12] << 8) | ((unsigned char)recvData[13] << 0 )) / 100.0;
 			//cout << (short)recvData[0] << "\t" << (unsigned char)recvData[1] << "\t" << roll << endl;
-//			cout << roll << "\t" << pitch << "\t" << yaw << "\t" << alt << "\t" << ax << "\t"
-//				<< ay << "\t" << az << endl;
+			//cout << roll << "\t" << pitch << "\t" << yaw << "\t" << alt << "\t" << ax << "\t"
+			//	<< ay << "\t" << az << endl;
 			
 			/*
 			for(int i=0; i<recvDataLen; i++) {
@@ -402,6 +408,7 @@ void *thread_udp(void *arg) {
 
 	if( udp->CreateSocket() == 0 ) {
 		cout << "socket creating error " << endl;
+		udp_err_flag = 1;
 		return NULL;
 	}
 	cout << "create listening Socket" << endl;
@@ -423,7 +430,8 @@ void *thread_udp(void *arg) {
 		
 		cout << "data[0] : " << (int)((signed char)udp_data[0])  << "\t";
 		cout << "data[1] : " << (int)((signed char)udp_data[1])  << "\t";
-		cout << "data[2] : " << (int)((signed char)udp_data[2]) << endl;
+		cout << "data[2] : " << (int)((signed char)udp_data[2])  << "\t";
+		cout << "data[3] : " << (int)((signed char)udp_data[3]) << endl;
 
 		delay(20);
 		

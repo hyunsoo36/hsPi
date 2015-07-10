@@ -12,17 +12,16 @@ UDPServer::~UDPServer() {
 
 int UDPServer::CreateSocket() {
 	int opt = 1;
-	u_long inputMode = 1;
 	
 	// Create socket
 	sd = socket(PF_INET, SOCK_DGRAM, 0);
-	setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-	
-	//ioctlsocket(sd, FIOBIO, &inputMode);
-	
+
 	if(sd == -1) {
 		return 0;
 	}
+	
+	setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	
 	return 1;
 	
 
