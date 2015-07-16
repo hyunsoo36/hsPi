@@ -15,8 +15,8 @@ int SerialhsWing::initSerial() {
 	if( wiringPiSetup() == -1 ) {
 		return -1;
 	}
-	//if((fd = serialOpen("/dev/ttyAMA0", 115200)) < 0) {
-	if((fd = serialOpen("/dev/ttyS2", 115200)) < 0) {
+	//if((fd = serialOpen("/dev/ttyAMA0", 115200)) < 0) {	// for Raspberry Pi
+	if((fd = serialOpen("/dev/ttyS2", 115200)) < 0) {	// for Odroid
 		//fprintf(stderr, "Unable to open serial device: %s\n", strerror(errno));
 		return -1;
 	}
@@ -30,31 +30,41 @@ int SerialhsWing::initSerial() {
 	return 1;
 }
 int SerialhsWing::makePacket(char* data, int len) {
+	
+	data_size = len;
+	
 	packet[0] = HS_PACKET_HEADER1;
 	packet[1] = HS_PACKET_HEADER2;
-	packet[2] = len;
 	for( int i=0; i<len; i++ ) {
-		packet[3+i] = data[i];
+		packet[2+i] = data[i];
 	}
-	packet[3+len] = HS_PACKET_TAIL;
+	packet[2+len] = HS_PACKET_TAIL;
 
 
 }
 
-int SerialhsWing::sendPacket() {
+int SerialhsWing::sendPacket(int VTOL_state, int udp_err_flag) {
+	
+
 	/*
-	for(int i=0; i<HS_PACKET_LENGTH_MAX; i++) {
-		
+	for(int i=0; i<data_size + 3; i++) {
+		//buffer[i] = serialGetchar(fd);
 		cout << (unsigned int)packet[i] << " ";
 	}
 	cout << endl;
 	*/
 	
-	//serialPuts(fd, packet);
-	write(fd, packet, HS_PACKET_LENGTH_MAX);
+	write(fd, packet, data_size + 3);	// 3 bytes are header and tail bytes.
 	
-	digitalWrite(SERIAL_LED, iSerialLed);  
-	iSerialLed = (iSerialLed == 1) ? 0 : 1;
+	// Blink LED
+	if( VTOL_state == 2 ) {
+		digitalWrite(SERIAL_LED, iSerialLed);  
+		iSerialLed = (iSerialLed == 1) ? 0 : 1;
+	}else if( VTOL_state == 1 || udp_err_flag == 2) {
+		digitalWrite(SERIAL_LED, 1);  
+	}else if( VTOL_state == 0 ) {
+		digitalWrite(SERIAL_LED, 0);  
+	}
 
 }
 int SerialhsWing::recvPacket(signed char* data) {

@@ -23,7 +23,7 @@
 
 //#define WIRELESS_DEBUGGING
 
-#define LOOP_TIME 66 // [ms]
+#define LOOP_TIME 50 // [ms]
 #define SERIAL_TIME 50
 
 /////////////////////////////////////
@@ -47,6 +47,8 @@ void *thread_udp(void *arg);
 void *thread_serial(void *arg);
 void *thread_cv(void *arg);
 
+double getVelocitybyRotate(double angularVelocity, double z);	// [deg/s], [m]
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
@@ -62,10 +64,12 @@ Mat frame, img;
 
 double roll_sp, pitch_sp, yaw_sp, alt_sp;
 double roll, pitch, yaw, alt, ax, ay, az;
+double lastRoll, lastPitch;
 
 char udp_data[1024] = {0, };
 
 int udp_err_flag = 0;
+int VTOL_state = 0;
 
 
 int main(int argc, char** argv){
@@ -96,12 +100,9 @@ int main(int argc, char** argv){
 		cout << "Cannot creating cv thread" << endl;
 		return -1;
 	}
+	cout.fill(' ');
+	cout.precision(3);
 	
-	
-	
-	
-	
-	//delay(5000);
 
 	while (1)
 	{
@@ -110,14 +111,14 @@ int main(int argc, char** argv){
 		
 	
 		
+		double rollVelocity = (roll - lastRoll) / (LOOP_TIME / 1000.0);
+		double pitchVelocity = (pitch - lastPitch) / (LOOP_TIME / 1000.0);
+		getVelocitybyRotate( rollVelocity, alt/100.0 );
+		getVelocitybyRotate( pitchVelocity, alt/100.0 );
 		
-		
-		      
-		//digitalWrite(LED2, 0);        
-		//delay(500);
-		//digitalWrite(LED1, 1);        
-		//digitalWrite(LED2, 1);        
-		//delay(20);
+		//cout << "roll velocity : " << (double)getVelocitybyRotate( rollVelocity, alt/100.0 ) 
+		//	<< "\tpitch velocity : " << (double)getVelocitybyRotate( pitchVelocity, alt/100.0 ) << endl;
+
 		
 		//make profile
 		
@@ -161,9 +162,12 @@ int main(int argc, char** argv){
 	return 0;
 }
 
+double getVelocitybyRotate(double angularVelocity, double z) {	// [deg/s], [m]
+	return tan( angularVelocity / 57.23 ) * z ;
+}
 void *thread_cv(void *arg) {
 
-#if 0
+#if 1
 
 	double hroll, hpitch, hyaw, halt;
 	double prev_hroll, prev_hpitch;
@@ -174,9 +178,8 @@ void *thread_cv(void *arg) {
 	VideoCapture cap(0);
 	
 	
-	
-	cap.set(CV_CAP_PROP_FRAME_WIDTH, 320);//640);
-	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 240);//480);
+	cap.set(CV_CAP_PROP_FRAME_WIDTH, 240);//320);//640);
+	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 240);//240);//480);
 	Mat frame, grayFrames, rgbFrames, prevGrayFrame, robustFrames, testFrames;
 	Mat opticalFlow = Mat(cap.get(CV_CAP_PROP_FRAME_HEIGHT), cap.get(CV_CAP_PROP_FRAME_HEIGHT), CV_32FC3);
 
@@ -195,7 +198,7 @@ void *thread_cv(void *arg) {
 	int i, k, vel_cnt = 1, vel_cnt1 = 1;
 	TermCriteria termcrit(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, 0.03);
 	Size subPixWinSize(13, 13), winSize(13, 13);
-//	namedWindow(rawWindow, CV_WINDOW_AUTOSIZE);
+	namedWindow(rawWindow, CV_WINDOW_AUTOSIZE);
 //	namedWindow(robustWindow, CV_WINDOW_AUTOSIZE);
 
 	double angle;
@@ -226,8 +229,7 @@ void *thread_cv(void *arg) {
 		frame.copyTo(robustFrames);
 		cvtColor(rgbFrames, grayFrames, CV_BGR2GRAY);
 		
-		if (needToInit) 
-		{
+		if (needToInit) {
 			goodFeaturesToTrack(grayFrames, points1, MAX_COUNT, 0.01, 5, Mat(), 3, 0, 0.04);
 //			cornerSubPix(grayFrames, points1, subPixWinSize, Size(-1, -1), termcrit);
 			Vr1_x = tan(hroll) * halt;
@@ -235,36 +237,23 @@ void *thread_cv(void *arg) {
 			needToInit = false;
 		}
 		
-		else if (!points2.empty()) 
-		{
-//			cout << "\n\n\nCalculating  calcOpticalFlowPyrLK\n\n\n\n\n";
+		else if (!points2.empty()) {
 			calcOpticalFlowPyrLK(prevGrayFrame, grayFrames, points2, points1, status, err, winSize, 3, termcrit, 0, 0.001);
 		
 //			testFrames = findFundamentalMat(points2, points1, FM_RANSAC, 3, 0.99, ransac_status);
 			Vr_x = Vr1_x - Vr2_x;
 			Vr_y = Vr1_y - Vr2_y;
 			
-			for (i = k = 0; i < points2.size(); i++)
-			{
+			for (i = k = 0; i < points2.size(); i++){
 				
-				if(status[i] == 1)
-				{
+				if(status[i] == 1){
 //					line(rgbFrames, points1[i], points2[i], Scalar(0, 0, 255), 1, 1, 0);
 //					circle(rgbFrames, points1[i], 2, Scalar(255, 0, 0), 1, 1, 0);
 					nvel_x = nvel_x + (points1[i].x - points2[i].x);
 					nvel_y = nvel_y + (points1[i].y - points2[i].y);
 					vel_cnt++;
 				}
-				/*
-				if(ransac_status[i] == 1)
-				{
-					line(robustFrames, points1[i], points2[i], Scalar(0, 0, 255), 1, 1, 0);
-					circle(robustFrames, points1[i], 2, Scalar(255, 0, 0), 1, 1, 0);
-					rvel_x = rvel_x + (points1[i].x - points2[i].x);
-					rvel_y = rvel_y + (points1[i].y - points2[i].y);
-					vel_cnt1++;
-				}
-				*/
+				
 				line(rgbFrames, points1[i], points2[i], Scalar(0, 0, 255), 1, 1, 0);
 //				circle(rgbFrames, points1[i], 2, Scalar(255, 0, 0), 1, 1, 0);
 
@@ -284,18 +273,13 @@ void *thread_cv(void *arg) {
 		
 		velocity_x = nvel_x - Vr_x;
 		velocity_y = nvel_y - Vr_y;
-//		rvel_x = rvel_x / vel_cnt1;
-//		rvel_y = rvel_y / vel_cnt1;
-//		cout << nvel_x << " " << nvel_y << endl;
-//		cout << rvel_x << " " << rvel_y << endl;
-//		cout << rvel_x*p2m_width << " " << rvel_y*p2m_height << endl;
+
 		cout << hroll << " " << hpitch << " " << nvel_x << " " << nvel_y << " " << Vr_x << " " << Vr_y
 		<< " " <<velocity_x << " " << velocity_y << endl;
-//		cout << Vr1_x << " " << Vr1_y << " " << Vr2_x << " " << Vr2_y << " " << halt << endl;
-//		cout << velocity_x << " " << velocity_y << endl;
+
 		vel_cnt = vel_cnt1 = 1;
 		nvel_x = nvel_y = 0;
-//		imshow(rawWindow, rgbFrames);
+		imshow(rawWindow, rgbFrames);
 //		imshow(robustWindow, robustFrames);
 		swap(points2, points1);
 		points1.clear();
@@ -324,6 +308,7 @@ void *thread_cv(void *arg) {
 #endif
 
 }
+
 void *thread_serial(void *arg) {
 	
 	SerialhsWing *hsSerial = new SerialhsWing();
@@ -335,36 +320,33 @@ void *thread_serial(void *arg) {
 	}else {
 		cout << "Wiring Pi init success" << endl;
 	}
-
+	
+	char sendData[8] = {0, };
+	signed char recvData[HS_RECV_DATA_LENGTH] = {0, };
+	int recvDataLen;
+	
 	while(1) {
-		if(udp_err_flag==1) break;
-		if( sendCnt > 0 ) {
+		if( sendCnt > 0 ) {	// sand : recv = 1 : 2
 			sendCnt = 0;
 			
-			char tmpStr[8];
-			
 			//pthread_mutex_lock(&mutex);
-			tmpStr[0] = (char)(( ((short)(roll_sp)) & 0xFF00 ) >> 8);
-			tmpStr[1] = (char)(( ((short)(roll_sp)) & 0x00FF ) >> 0);
-			tmpStr[2] = (char)(( ((short)(pitch_sp)) & 0xFF00 ) >> 8);
-			tmpStr[3] = (char)(( ((short)(pitch_sp)) & 0x00FF ) >> 0);
-			tmpStr[4] = (char)(( ((short)(yaw_sp)) & 0xFF00 ) >> 8);
-			tmpStr[5] = (char)(( ((short)(yaw_sp)) & 0x00FF ) >> 0);
-			tmpStr[6] = (char)(( ((short)(alt_sp*10.0)) & 0xFF00 ) >> 8);
-			tmpStr[7] = (char)(( ((short)(alt_sp*10.0)) & 0x00FF ) >> 0);
+			sendData[0] = (char)(( ((short)(VTOL_state)) & 0x00FF ) >> 0);
+			sendData[1] = (char)(( ((short)(roll_sp)) & 0x00FF ) >> 0);
+			sendData[2] = (char)(( ((short)(pitch_sp)) & 0x00FF ) >> 0);
+			sendData[3] = (char)(( ((short)(yaw_sp)) & 0x00FF ) >> 0);
+			sendData[4] = (char)(( ((short)(alt_sp*10.0)) & 0x00FF ) >> 0);
 			//pthread_mutex_unlock(&mutex);
 			
-			hsSerial->makePacket(tmpStr, 8);
-			hsSerial->sendPacket();
+			hsSerial->makePacket(sendData, 5);
+			hsSerial->sendPacket(VTOL_state, udp_err_flag);
 			
 		}else {
 			sendCnt ++;
 		}
 		
 		
-		signed char recvData[HS_PACKET_LENGTH_MAX];
-		int recvDataLen;
 		recvDataLen = hsSerial->recvPacket(recvData);
+		
 		if( recvDataLen == -1 ) {
 			cout << "serial error..." << endl;
 		}else if( recvDataLen == 0 ) {
@@ -372,6 +354,10 @@ void *thread_serial(void *arg) {
 		}else if( recvDataLen == 9999 ) {
 			//cout << "serial 9999" << endl;
 		}else {
+			
+			lastRoll = roll;
+			lastPitch = pitch;
+			
 			roll = (((short)recvData[0] << 8) | ((unsigned char)recvData[1] << 0 )) / 10.0;
 			pitch = (((short)recvData[2] << 8) | ((unsigned char)recvData[3] << 0 )) / 10.0;
 			yaw = (((short)recvData[4] << 8) | ((unsigned char)recvData[5] << 0 )) / 10.0;
@@ -379,36 +365,42 @@ void *thread_serial(void *arg) {
 			ax = (((short)recvData[8] << 8) | ((unsigned char)recvData[9] << 0 )) / 100.0;
 			ay = (((short)recvData[10] << 8) | ((unsigned char)recvData[11] << 0 )) / 100.0;
 			az = (((short)recvData[12] << 8) | ((unsigned char)recvData[13] << 0 )) / 100.0;
+			
 			//cout << (short)recvData[0] << "\t" << (unsigned char)recvData[1] << "\t" << roll << endl;
 			//cout << roll << "\t" << pitch << "\t" << yaw << "\t" << alt << "\t" << ax << "\t"
 			//	<< ay << "\t" << az << endl;
 			
-			/*
-			for(int i=0; i<recvDataLen; i++) {
-				cout << (int)recvData[i] <<  "  ";
-			}
-			cout << "" << endl;
-			*/
+			
+			//for(int i=0; i<recvDataLen; i++) {
+			//	cout << (int)recvData[i] <<  "  ";
+			//}
+			//cout << "" << endl;
+			
+			
 		}
-#ifndef WIRELESS_DEBUGGING
-		delay(30);
-#else
+		
+#ifdef WIRELESS_DEBUGGING
 		delay(5);
+#else
+		delay(20);
 #endif
+
 
 
 	}
 }
 
 void *thread_udp(void *arg) {
-
+	
+	delay(500);
+	
 	int recvLen = 0;
 	UDPServer *udp = new UDPServer();
 	//char *data;
 
 	if( udp->CreateSocket() == 0 ) {
 		cout << "socket creating error " << endl;
-		udp_err_flag = 1;
+		udp_err_flag = 1;	
 		return NULL;
 	}
 	cout << "create listening Socket" << endl;
@@ -418,22 +410,39 @@ void *thread_udp(void *arg) {
 		return NULL;
 	}
 	cout << "bind success " << endl;
-
+	
+	udp_err_flag = 2;	// OK flag
+	
 	while(1) {
-
+		
 		recvLen = udp->ReceiveData(udp_data);
+		
+		if( VTOL_state == 0 && (((int)((signed char)udp_data[3]) == 1) || ((int)((signed char)udp_data[3]) == 2)) ) {	// if touch take off button
+			cout << "STATE : READY Mode.." << endl;
+		}else if( VTOL_state == 1 && (int)((signed char)udp_data[3]) == 2) {	// if touch take off button
+			cout << "STATE : FLYING Mode.." << endl;
+		}else if( VTOL_state == 2 && VTOL_state != (int)((signed char)udp_data[3])) { // if touch langing button
+			cout << "STATE : WAIT Mode.." << endl;
+		}
+		
+		VTOL_state = 0;	// for testing communication
 		
 		//pthread_mutex_lock(&mutex);
 		roll_sp = (double)((int)((signed char)udp_data[0]));
 		pitch_sp = (double)((int)((signed char)udp_data[1]));
+		alt_sp = (double)((int)((signed char)udp_data[2]));
+		VTOL_state = (int)((signed char)udp_data[3]);
 		//pthread_mutex_unlock(&mutex);
 		
+		
+		
+/*
 		cout << "data[0] : " << (int)((signed char)udp_data[0])  << "\t";
 		cout << "data[1] : " << (int)((signed char)udp_data[1])  << "\t";
 		cout << "data[2] : " << (int)((signed char)udp_data[2])  << "\t";
 		cout << "data[3] : " << (int)((signed char)udp_data[3]) << endl;
-
-		delay(20);
+*/
+		delay(10);
 		
 	}
 }
