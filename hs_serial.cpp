@@ -1,6 +1,9 @@
 #include "hs_serial.hpp"
 #include <string.h>
 #include <unistd.h>
+#include <wiringPi.h>
+#include <wiringSerial.h>
+#include <iostream>
 
 SerialhsWing::SerialhsWing() {
 	

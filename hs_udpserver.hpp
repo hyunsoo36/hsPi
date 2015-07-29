@@ -1,17 +1,9 @@
-#ifndef _HS_EXTERN_H__
-#define _HS_EXTERN_H__
+#ifndef _HS_UDPSERVER_H__
+#define _HS_UDPSERVER_H__
 
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h>
-#include <iostream>
-
-using namespace std;
 
 #define HS_UDP_PORT 		9949
 

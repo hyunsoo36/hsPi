@@ -1,9 +1,7 @@
 #ifndef _HS_SERIAL_HPP__
 #define _HS_SERIAL_HPP__
 
-#include <wiringPi.h>
-#include <wiringSerial.h>
-#include <iostream>
+
 using namespace std;
 
 #define HS_BUFFER_LENGTH 18

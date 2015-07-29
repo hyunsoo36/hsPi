@@ -1,6 +1,14 @@
 #include "hs_udpserver.hpp"
 #include <sys/ioctl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 
+#include <netdb.h>
+#include <iostream>
+
+using namespace std;
 
 UDPServer::UDPServer() {
 
