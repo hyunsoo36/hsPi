@@ -9,6 +9,7 @@
 
 using namespace std;
 
+void initOdometrybyAccel(double offset_x, double offset_y, double offset_z);
 
 class HSNavi {
 private:

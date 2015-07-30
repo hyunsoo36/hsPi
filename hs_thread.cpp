@@ -13,6 +13,7 @@
 #include "wiringPi.h"
 #include "hs_udpserver.hpp"
 #include "hs_serial.hpp"
+#include "hsNavi.hpp"
 
 char rawWindow[] = "Raw Video";
 char robustWindow[] = "Robust Window";
@@ -23,14 +24,16 @@ double profileTime = 0;
 
 double serial_time = 0;
 
-double roll_sp, pitch_sp, yaw_sp, alt_sp;
-double roll, pitch, yaw, alt, ax, ay, az;
-double lastRoll, lastPitch;
+//double roll_sp, pitch_sp, yaw_sp, alt_sp;
+//double roll, pitch, yaw, alt, ax, ay, az;
+//double lastRoll, lastPitch;
 
 char udp_data[1024] = {0, };
 
 int udp_err_flag = 0;
-int VTOL_state = 0;
+
+VTOL_data wingwing2;
+Phone_data phone2;
 
 void *thread_cv(void *arg) {
 
@@ -108,19 +111,19 @@ void *thread_serial(void *arg) {
 	int recvDataLen;
 	
 	while(1) {
-		if( sendCnt > 0 ) {	// sand : recv = 1 : 2
+		if( sendCnt > 0 ) {	// sand freq : recv freq = 1 : 2
 			sendCnt = 0;
 			
 			//pthread_mutex_lock(&mutex);
-			sendData[0] = (char)(( ((short)(VTOL_state)) & 0x00FF ) >> 0);
-			sendData[1] = (char)(( ((short)(roll_sp)) & 0x00FF ) >> 0);
-			sendData[2] = (char)(( ((short)(pitch_sp)) & 0x00FF ) >> 0);
-			sendData[3] = (char)(( ((short)(yaw_sp)) & 0x00FF ) >> 0);
-			sendData[4] = (char)(( ((short)(alt_sp*10.0)) & 0x00FF ) >> 0);
+			sendData[0] = (char)(( ((short)(phone2.VTOL_state)) & 0x00FF ) >> 0);
+			sendData[1] = (char)(( ((short)(phone2.roll_sp)) & 0x00FF ) >> 0);
+			sendData[2] = (char)(( ((short)(phone2.pitch_sp)) & 0x00FF ) >> 0);
+			sendData[3] = (char)(( ((short)(phone2.yaw_sp)) & 0x00FF ) >> 0);
+			sendData[4] = (char)(( ((short)(phone2.alt_sp*10.0)) & 0x00FF ) >> 0);
 			//pthread_mutex_unlock(&mutex);
 			
 			hsSerial->makePacket(sendData, 5);
-			hsSerial->sendPacket(VTOL_state, udp_err_flag);
+			hsSerial->sendPacket(phone2.VTOL_state, udp_err_flag);
 			
 		}else {
 			sendCnt ++;
@@ -137,20 +140,20 @@ void *thread_serial(void *arg) {
 			//cout << "serial 9999" << endl;
 		}else {
 			
-			lastRoll = roll;
-			lastPitch = pitch;
+			wingwing2.lastRoll = wingwing2.roll;
+			wingwing2.lastPitch = wingwing2.pitch;
 			
-			roll = (((short)recvData[0] << 8) | ((unsigned char)recvData[1] << 0 )) / 10.0;
-			pitch = (((short)recvData[2] << 8) | ((unsigned char)recvData[3] << 0 )) / 10.0;
-			yaw = (((short)recvData[4] << 8) | ((unsigned char)recvData[5] << 0 )) / 10.0;
-			alt = (((short)recvData[6] << 8) | ((unsigned char)recvData[7] << 0 )) / 10.0;
-			ax = (((short)recvData[8] << 8) | ((unsigned char)recvData[9] << 0 )) / 100.0;
-			ay = (((short)recvData[10] << 8) | ((unsigned char)recvData[11] << 0 )) / 100.0;
-			az = (((short)recvData[12] << 8) | ((unsigned char)recvData[13] << 0 )) / 100.0;
+			wingwing2.roll = (((short)recvData[0] << 8) | ((unsigned char)recvData[1] << 0 )) / 10.0;
+			wingwing2.pitch = (((short)recvData[2] << 8) | ((unsigned char)recvData[3] << 0 )) / 10.0;
+			wingwing2.yaw = (((short)recvData[4] << 8) | ((unsigned char)recvData[5] << 0 )) / 10.0;
+			wingwing2.alt = (((short)recvData[6] << 8) | ((unsigned char)recvData[7] << 0 )) / 10.0;
+			wingwing2.ax = (((short)recvData[8] << 8) | ((unsigned char)recvData[9] << 0 )) / 100.0;
+			wingwing2.ay = (((short)recvData[10] << 8) | ((unsigned char)recvData[11] << 0 )) / 100.0;
+			wingwing2.az = (((short)recvData[12] << 8) | ((unsigned char)recvData[13] << 0 )) / 100.0;
 			
 			//cout << (short)recvData[0] << "\t" << (unsigned char)recvData[1] << "\t" << roll << endl;
-			//cout << roll << "\t" << pitch << "\t" << yaw << "\t" << alt << "\t" << ax << "\t"
-			//	<< ay << "\t" << az << endl;
+			//cout << wingwing2.roll << "\t" << wingwing2.pitch << "\t" << wingwing2.yaw << "\t" << wingwing2.alt << "\t" << wingwing2.ax << "\t"
+			//	<< wingwing2.ay << "\t" << wingwing2.az << endl;
 			
 			
 			//for(int i=0; i<recvDataLen; i++) {
@@ -199,21 +202,24 @@ void *thread_udp(void *arg) {
 		
 		recvLen = udp->ReceiveData(udp_data);
 		
-		if( VTOL_state == 0 && (((int)((signed char)udp_data[3]) == 1) || ((int)((signed char)udp_data[3]) == 2)) ) {	// if touch take off button
-			cout << "STATE : READY Mode.." << endl;
-		}else if( VTOL_state == 1 && (int)((signed char)udp_data[3]) == 2) {	// if touch take off button
-			cout << "STATE : FLYING Mode.." << endl;
-		}else if( VTOL_state == 2 && VTOL_state != (int)((signed char)udp_data[3])) { // if touch langing button
-			cout << "STATE : WAIT Mode.." << endl;
+		if( phone2.VTOL_state == 0 && (((int)((signed char)udp_data[3]) == 1) || ((int)((signed char)udp_data[3]) == 2)) ) {	// if touch take off button
+			//cout << "STATE : READY Mode.." << endl;
+		}else if( phone2.VTOL_state == 1 && (int)((signed char)udp_data[3]) == 2) {	// if touch take off button
+			//cout << "STATE : FLYING Mode.." << endl;
+			
+			initOdometrybyAccel(wingwing2.ax, wingwing2.ay, wingwing2.az-1.0);
+			
+		}else if( phone2.VTOL_state == 2 && phone2.VTOL_state != (int)((signed char)udp_data[3])) { // if touch langing button
+			//cout << "STATE : WAIT Mode.." << endl;
 		}
 		
-		VTOL_state = 0;	// for testing communication
+		phone2.VTOL_state = 0;	// for testing communication
 		
 		//pthread_mutex_lock(&mutex);
-		roll_sp = (double)((int)((signed char)udp_data[0]));
-		pitch_sp = (double)((int)((signed char)udp_data[1]));
-		alt_sp = (double)((int)((signed char)udp_data[2]));
-		VTOL_state = (int)((signed char)udp_data[3]);
+		phone2.roll_sp = (double)((int)((signed char)udp_data[0]));
+		phone2.pitch_sp = (double)((int)((signed char)udp_data[1]));
+		phone2.alt_sp = (double)((int)((signed char)udp_data[2]));
+		phone2.VTOL_state = (int)((signed char)udp_data[3]);
 		//pthread_mutex_unlock(&mutex);
 		
 		
