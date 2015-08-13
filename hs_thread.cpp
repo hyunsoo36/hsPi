@@ -15,6 +15,11 @@
 #include "hs_serial.hpp"
 #include "hsNavi.hpp"
 
+#define BLOCK_COUNT	10
+#define BLOCK_COUNT	10
+
+#define MAX_COUNT 10
+
 char rawWindow[] = "Raw Video";
 char robustWindow[] = "Robust Window";
 
@@ -35,9 +40,12 @@ int udp_err_flag = 0;
 VTOL_data wingwing2;
 Phone_data phone2;
 
+extern Command_data cmd_data;
+extern HSNavi hsNavi;
+
 void *thread_cv(void *arg) {
 
-#if 0
+#if 1
 	
 	VideoCapture cap(0);
 	
@@ -47,20 +55,36 @@ void *thread_cv(void *arg) {
 	cap.set(CV_CAP_PROP_FPS, 10);
 	cap.set(CV_CAP_PROP_EXPOSURE, 10);
 	
-	Mat frame;
-	Mat grayFrame, rgbFrame, prevGrayFrame;
-	Mat opticalFlowFrame = Mat(cap.get(CV_CAP_PROP_FRAME_HEIGHT), cap.get(CV_CAP_PROP_FRAME_WIDTH), CV_32FC3);
+	Mat frame_prev;
+	Mat frame, frame_gray;
+	Vector<Mat>img_prev;
+	Vector<Mat>img;
+	//Mat opticalFlowFrame = Mat(cap.get(CV_CAP_PROP_FRAME_HEIGHT), cap.get(CV_CAP_PROP_FRAME_WIDTH), CV_32FC3);
 	
+	cap >> frame;
+	cvtColor(frame, frame_gray, CV_RGB2GRAY);
+	frame_prev = frame_gray.clone();
 
-	int i, k, vel_cnt = 1, vel_cnt1 = 1;
-	//TermCriteria termcrit(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, 0.03);
-
-	namedWindow(rawWindow, CV_WINDOW_AUTOSIZE);
-
-
-	char str[50];
-	CvFont font;
-
+	int h = frame.size().height / BLOCK_COUNT;
+	int w = frame.size().width / BLOCK_COUNT;
+	
+	vector<Point2f> featurePrev, featureNext;
+	
+	vector<uchar> isFound;
+	vector<float> err;
+	Size winSize(5, 5);
+	TermCriteria termcrit(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, 0.03);
+	
+	featurePrev.clear();
+	for (int i=0; i<BLOCK_COUNT; i++) {
+			for (int j=0; j<BLOCK_COUNT; j++) {
+				featurePrev.push_back(Point2f( i * w + (w/2), j * h + (h/2) ));
+			}
+	}
+	
+	
+	featureNext = featurePrev;
+	
 	// Timming Variable
 	clock_t tStart, tEnd; 
 	double tElapsed;
@@ -74,20 +98,43 @@ void *thread_cv(void *arg) {
 		//cout << "FPS : " << 1000.0/tElapsed << "fps" << endl;
 		
 		
-		
 		cap >> frame;
 		
-		//cvtColor(frame, grayFrame, CV_BGR2GRAY);
+		cvtColor(frame, frame_gray, CV_RGB2GRAY);
+
+		
+		int sum_x=0, sum_y=0;
+		calcOpticalFlowPyrLK(frame_prev, frame_gray, featurePrev, featureNext, isFound, err, winSize, 3, termcrit, 0, 0.01);
+		
+		
+		
+		for (int i=0; i<featurePrev.size(); i++) {
+			//if(isFound[i] == 1) {
+				line(frame, featurePrev[i], featureNext[i], Scalar(0, 0, 255), 1, 1, 0);
+				sum_x += featureNext[i].x - featurePrev[i].x;
+				sum_y += featureNext[i].y - featurePrev[i].y;
+			//}
+		}
+		hsNavi.setOpticalFlowResult(
+			(float)sum_x / (float)(BLOCK_COUNT*BLOCK_COUNT),
+			(float)sum_y / (float)(BLOCK_COUNT*BLOCK_COUNT) );
+		
+	
+		//goodFeaturesToTrack(frame_gray, featurePrev, MAX_COUNT, 0.01, 5, Mat(), 3, 0, 0.04);
 		
 
-		//calcOpticalFlowPyrLK(prevGrayFrame, grayFrames, points2, points1, status, err, winSize, 3, termcrit, 0, 0.001);
+		frame_prev = frame_gray.clone();
+		
+		//Mat frame_x2;
+		//pyrUp(frame, frame_x2, Size(frame.cols*2, frame.rows*2));
+		//imshow("Ori", frame);
+		
+		
 		
 
-		imshow(rawWindow, frame);
-
-		//grayFrame.copyTo(prevGrayFrame);
-		
-		waitKey(1);
+		if(waitKey(1) == 27) {
+			break;
+		}
 		
 	}
 #endif
@@ -116,14 +163,15 @@ void *thread_serial(void *arg) {
 			
 			//pthread_mutex_lock(&mutex);
 			sendData[0] = (char)(( ((short)(phone2.VTOL_state)) & 0x00FF ) >> 0);
-			sendData[1] = (char)(( ((short)(phone2.roll_sp)) & 0x00FF ) >> 0);
-			sendData[2] = (char)(( ((short)(phone2.pitch_sp)) & 0x00FF ) >> 0);
-			sendData[3] = (char)(( ((short)(phone2.yaw_sp)) & 0x00FF ) >> 0);
-			sendData[4] = (char)(( ((short)(phone2.alt_sp*10.0)) & 0x00FF ) >> 0);
+			sendData[1] = (char)(( ((short)(cmd_data.roll_sp)) & 0x00FF ) >> 0);
+			sendData[2] = (char)(( ((short)(cmd_data.pitch_sp)) & 0x00FF ) >> 0);
+			sendData[3] = (char)(( ((short)(cmd_data.yaw_sp)) & 0x00FF ) >> 0);
+			sendData[4] = (char)(( ((short)(cmd_data.alt_sp*10.0)) & 0x00FF ) >> 0);
 			//pthread_mutex_unlock(&mutex);
 			
 			hsSerial->makePacket(sendData, 5);
 			hsSerial->sendPacket(phone2.VTOL_state, udp_err_flag);
+			
 			
 		}else {
 			sendCnt ++;
@@ -207,7 +255,8 @@ void *thread_udp(void *arg) {
 		}else if( phone2.VTOL_state == 1 && (int)((signed char)udp_data[3]) == 2) {	// if touch take off button
 			//cout << "STATE : FLYING Mode.." << endl;
 			
-			initOdometrybyAccel(wingwing2.ax, wingwing2.ay, wingwing2.az-1.0);
+			hsNavi.landingInitalize();
+			//initOdometrybyAccel(wingwing2.ax, wingwing2.ay, wingwing2.az-1.0);
 			
 		}else if( phone2.VTOL_state == 2 && phone2.VTOL_state != (int)((signed char)udp_data[3])) { // if touch langing button
 			//cout << "STATE : WAIT Mode.." << endl;

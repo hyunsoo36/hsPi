@@ -59,6 +59,9 @@ unsigned long ulElapsedTime = 0;
 
 //extern double roll_sp, pitch_sp, yaw_sp, alt_sp;
 //extern double roll, pitch, yaw, alt, ax, ay, az;
+
+HSNavi hsNavi;
+
 extern VTOL_data wingwing2;
 extern Phone_data phone2;
 
@@ -91,9 +94,10 @@ int main(int argc, char** argv){
 		return -1;
 	}
 	cout.fill(' ');
+	cout << fixed;
 	cout.precision(3);
 	
-	HSNavi *haNavi = new HSNavi();
+	
 	
 	
 	while (1)
@@ -101,8 +105,14 @@ int main(int argc, char** argv){
 		
 		ulTimeBegin = millis();
 		//cout << roll << ", " << pitch << ", " << az << ", " << endl;
-		haNavi->estimateVelbyAccel(wingwing2.roll, wingwing2.pitch, wingwing2.ax, wingwing2.ay, wingwing2.az, LOOP_TIME/1000.0);
+		hsNavi.setParameters(wingwing2, LOOP_TIME/1000.0f);
+		hsNavi.estimateVelbyAccel();
+		//hsNavi.velocityController(0.0f, 0.0f);
+		hsNavi.updateCMDdata();
 		
+		cout << hsNavi.vel_ax << "\t" << hsNavi.vel_ay << "\t" 
+			<< hsNavi.vel_vy << "\t" << hsNavi.vel_vx << endl;
+			
 		//double rollVelocity = (roll - lastRoll) / (LOOP_TIME / 1000.0);
 		//double pitchVelocity = (pitch - lastPitch) / (LOOP_TIME / 1000.0);
 		//getVelocitybyRotate( rollVelocity, alt/100.0 );

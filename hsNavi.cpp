@@ -1,72 +1,109 @@
 #include "hsNavi.hpp"
 #include <math.h>
 
-float val_ax = 0;
-float val_ay = 0;
-float val_az = 0;
 
-double val_ax_tmp = 0;
-double val_ay_tmp = 0;
-double val_az_tmp = 0;
 
-#define HDR_ACC_I	0.005f
+// The i parameter is sensitive.
+// Experimentally, 
+// 0.002 reduced integral drift.
+#define HDR_ACC_I	0.003f
 
-float offset_ax, offset_ay, offset_az;
-float offset_roll, offset_pitch;
+float offset_ax=0, offset_ay=0, offset_az=0;
+float offset_roll=0, offset_pitch=0;
 
-void HSNavi::estimateVelbyAccel(double roll, double pitch, double ax, double ay, double az, double dt) {
+Command_data cmd_data;
+
+void HSNavi::velocityController(float sp_x, float sp_y) {
+	vel_ax_lpf = vel_ax_lpf * 0.95f + vel_ax * 0.05f;
+	vel_ay_lpf = vel_ay_lpf * 0.95f + vel_ay * 0.05f;
+	
+	err_x = sp_x - vel_ax_lpf;
+	err_y = -(sp_y - vel_ay_lpf);
+	
+	float p_x = err_x * kp;
+	float p_y = err_y * kp;
+	
+	float d_x = (err_x - err_x_last) * kd / dt;
+	float d_y = (err_y - err_y_last) * kd / dt;
+	
+	
+	pid_x = p_x + d_x;
+	pid_y = p_y + d_y;
+	
+	err_x_last = err_x;
+	err_y_last = err_y;
+	/*
+	cout << vel_ax;
+	cout << "\t";
+	cout << vel_ax_lpf;
+	cout << "\t";
+	cout << p_x;
+	cout << "\t";
+	cout << d_x;
+	cout << "\t";
+	cout << pid_x;
+	cout << endl;
+	*/
+	
+}
+
+
+void HSNavi::estimateVelbyAccel() {
 	cout.fill(' ');
 	cout.precision(3);
 	
 	//double weight_body = 106;	// [g]
 	
-	float roll_rad = roll/57.3f;
-	float pitch_rad = pitch/57.3f;
+	float roll_rad = wing2.roll/57.3f;
+	float pitch_rad = wing2.pitch/57.3f;
 	
-	float zeroG_ax = (ax-offset_ax) - (-sin(pitch_rad));
-	float zeroG_ay = (ay-offset_ay) - ( cos(pitch_rad) * sin(roll_rad) );
-	float zeroG_az = (az-offset_az) - ( cos(pitch_rad) * cos(roll_rad) );
+	float zeroG_ax = (wing2.ax/*-offset_ax*/) - (-sin(pitch_rad));
+	float zeroG_ay = (wing2.ay/*-offset_ay*/) - ( cos(pitch_rad) * sin(roll_rad) );
+	float zeroG_az = (wing2.az/*-offset_az*/) - ( cos(pitch_rad) * cos(roll_rad) );
 	
-	//cout << (ax-offset_ax) << "\t" << sin(pitch_rad) << endl;
-	//cout << ax << "\t" << ay << "\t" << az << "\t";
-	//cout << offset_ax << "\t" << offset_ay << "\t" << offset_az << endl;
-	//cout << ax-offset_ax << "\t" << ay-offset_ay << "\t" << az-offset_az << endl;
-	//cout << zeroG_ax << "\t" << zeroG_ay << "\t" << zeroG_az << endl;
+	//cout << wing2.pitch << "\t" << wing2.ax << "\t" << -sin(pitch_rad) << endl;
 	
-	val_ax_tmp = val_ax_tmp + (zeroG_ax * 9.8f * dt);
-	val_ay_tmp = val_ay_tmp + (zeroG_ay * 9.8f * dt);
-	val_az_tmp = val_az_tmp + (zeroG_az * 9.8f * dt);
+	vel_ax = vel_ax + (zeroG_ax * 9.8f * dt);
+	vel_ay = vel_ay + (zeroG_ay * 9.8f * dt);
+	vel_az = vel_az + (zeroG_az * 9.8f * dt);
 	
-	
-	
-	cout << val_ax_tmp << "\t" << val_ay_tmp << "\t" << val_az_tmp <<  "\t";
-	
-	val_ax = val_ax + (zeroG_ax * 9.8f * dt);
-	val_ay = val_ay + (zeroG_ay * 9.8f * dt);
-	val_az = val_az + (zeroG_az * 9.8f * dt);
-	
-	val_ax += ( (val_ax>0.0f) ? -HDR_ACC_I : ((val_ax<0.0f) ? HDR_ACC_I : 0.0f) );
-	val_ay += ( (val_ay>0.0f) ? -HDR_ACC_I : ((val_ay<0.0f) ? HDR_ACC_I : 0.0f) );
-	val_az += ( (val_az>0.0f) ? -HDR_ACC_I : ((val_az<0.0f) ? HDR_ACC_I : 0.0f) );
+	//vel_ax += ( (vel_ax>0.0f) ? -HDR_ACC_I : ((vel_ax<0.0f) ? HDR_ACC_I : 0.0f) );
+	//vel_ay += ( (vel_ay>0.0f) ? -HDR_ACC_I : ((vel_ay<0.0f) ? HDR_ACC_I : 0.0f) );
+	//vel_az += ( (vel_az>0.0f) ? -HDR_ACC_I : ((vel_az<0.0f) ? HDR_ACC_I : 0.0f) );
 	
 	//cout << roll << "\t" << pitch << "\t";
-	cout << val_ax << "\t" << val_ay << "\t" << val_az << endl;
-	
-	
+	//cout << vel_ax << "\t" << vel_ay << "\t" << vel_az << endl;
 	
 	
 }
 
-void initOdometrybyAccel(double offset_x, double offset_y, double offset_z) {
-	offset_ax = offset_x;
-	offset_ay = offset_y;
-	offset_az = offset_z;
-	//cout << offset_ax << "\t" << offset_ay << "\t" << offset_az << endl;
-	//val_ax = 0;
-	//val_ay = 0;
-	//val_az = 0;
-	//val_ax_tmp = 0;
-	//val_ay_tmp = 0;
-	//val_az_tmp = 0;
+void HSNavi::setOpticalFlowResult(float x, float y) {
+	vel_vx = x;
+	vel_vy = y;
+}
+
+void HSNavi::updateCMDdata() {
+	cmd_data.roll_sp = pid_y;
+	cmd_data.pitch_sp = pid_x;
+	
+}
+
+void HSNavi::setParameters(VTOL_data w2, float t) {
+	memcpy(&wing2, &w2, sizeof(VTOL_data));
+	dt = t;
+}
+
+void HSNavi::landingInitalize() {
+	vel_ax = 0;
+	vel_ay = 0;
+	vel_az = 0;
+}
+
+
+HSNavi::HSNavi() {
+	kp = 0.0f;//40.0f;
+	ki = 0.0f;
+	kd = 15.0f;
+	
 }
 
