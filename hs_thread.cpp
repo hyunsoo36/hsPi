@@ -15,6 +15,8 @@
 #include "hs_serial.hpp"
 #include "hsNavi.hpp"
 
+#define SERIAL_LOOP_DELAY	20
+
 #define BLOCK_COUNT	10
 #define BLOCK_COUNT	10
 
@@ -42,6 +44,9 @@ Phone_data phone2;
 
 extern Command_data cmd_data;
 extern HSNavi hsNavi;
+
+double getVelocitybyRotate(double angularVelocity, double z);	// [deg/s], [m]
+
 
 void *thread_cv(void *arg) {
 
@@ -94,6 +99,7 @@ void *thread_cv(void *arg) {
 		tEnd = millis();
 		tElapsed = tEnd - tStart;
 		tStart = millis();
+		float fps = 1000.0/tElapsed;
 		//cout << "Elapsed Time : " << tElapsed << "ms" << endl;
 		//cout << "FPS : " << 1000.0/tElapsed << "fps" << endl;
 		
@@ -104,20 +110,28 @@ void *thread_cv(void *arg) {
 
 		
 		int sum_x=0, sum_y=0;
+		int flow_cnt = 0;
 		calcOpticalFlowPyrLK(frame_prev, frame_gray, featurePrev, featureNext, isFound, err, winSize, 3, termcrit, 0, 0.01);
 		
 		
 		
 		for (int i=0; i<featurePrev.size(); i++) {
-			//if(isFound[i] == 1) {
+			float flow_x = featureNext[i].x - featurePrev[i].x;
+			float flow_y = featureNext[i].y - featurePrev[i].y;
+			if( flow_x*flow_x + flow_y*flow_y < w*h ) {
 				line(frame, featurePrev[i], featureNext[i], Scalar(0, 0, 255), 1, 1, 0);
-				sum_x += featureNext[i].x - featurePrev[i].x;
-				sum_y += featureNext[i].y - featurePrev[i].y;
-			//}
+				sum_x += flow_x;
+				sum_y += flow_y;
+				flow_cnt ++;
+			}
 		}
-		hsNavi.setOpticalFlowResult(
-			(float)sum_x / (float)(BLOCK_COUNT*BLOCK_COUNT),
-			(float)sum_y / (float)(BLOCK_COUNT*BLOCK_COUNT) );
+		
+		float alt = wingwing2.alt * 0.01;	// [cm] -> [m]
+		
+		float vel_ofx = (((float)sum_x/(float)(flow_cnt))*fps) * (alt * 0.828) / 240.0f;
+		float vel_ofy = (((float)sum_y/(float)(flow_cnt))*fps) * (alt * 0.828) / 240.0f;
+		
+		hsNavi.setOpticalFlowResult( vel_ofx, vel_ofy );
 		
 	
 		//goodFeaturesToTrack(frame_gray, featurePrev, MAX_COUNT, 0.01, 5, Mat(), 3, 0, 0.04);
@@ -191,8 +205,8 @@ void *thread_serial(void *arg) {
 			wingwing2.lastRoll = wingwing2.roll;
 			wingwing2.lastPitch = wingwing2.pitch;
 			
-			wingwing2.roll = (((short)recvData[0] << 8) | ((unsigned char)recvData[1] << 0 )) / 10.0;
-			wingwing2.pitch = (((short)recvData[2] << 8) | ((unsigned char)recvData[3] << 0 )) / 10.0;
+			wingwing2.roll = (((short)recvData[0] << 8) | ((unsigned char)recvData[1] << 0 )) / 100.0;
+			wingwing2.pitch = (((short)recvData[2] << 8) | ((unsigned char)recvData[3] << 0 )) / 100.0;
 			wingwing2.yaw = (((short)recvData[4] << 8) | ((unsigned char)recvData[5] << 0 )) / 10.0;
 			wingwing2.alt = (((short)recvData[6] << 8) | ((unsigned char)recvData[7] << 0 )) / 10.0;
 			wingwing2.ax = (((short)recvData[8] << 8) | ((unsigned char)recvData[9] << 0 )) / 100.0;
@@ -209,13 +223,19 @@ void *thread_serial(void *arg) {
 			//}
 			//cout << "" << endl;
 			
+			double rollVelocity = (wingwing2.roll - wingwing2.lastRoll) / (SERIAL_LOOP_DELAY / 1000.0);
+			double pitchVelocity = (wingwing2.pitch - wingwing2.lastPitch) / (SERIAL_LOOP_DELAY / 1000.0);
+			
+			cout << hsNavi.vel_ax << "\t" << hsNavi.vel_ay << "\t" 
+			<< hsNavi.vel_vy << "\t" << hsNavi.vel_vx <<"\t" 
+			<< hsNavi.hori_vel_x << "\t" << getVelocitybyRotate( pitchVelocity, wingwing2.alt/100.0 )<< endl;
 			
 		}
 		
 #ifdef WIRELESS_DEBUGGING
 		delay(5);
 #else
-		delay(20);
+		delay(SERIAL_LOOP_DELAY);
 #endif
 
 
@@ -282,6 +302,10 @@ void *thread_udp(void *arg) {
 		delay(10);
 		
 	}
+}
+
+double getVelocitybyRotate(double angularVelocity, double z) {	// [deg/s], [m]
+	return tan( angularVelocity / 57.23 ) * z ;
 }
 
 #endif

@@ -57,9 +57,9 @@ void HSNavi::estimateVelbyAccel() {
 	float roll_rad = wing2.roll/57.3f;
 	float pitch_rad = wing2.pitch/57.3f;
 	
-	float zeroG_ax = (wing2.ax/*-offset_ax*/) - (-sin(pitch_rad));
-	float zeroG_ay = (wing2.ay/*-offset_ay*/) - ( cos(pitch_rad) * sin(roll_rad) );
-	float zeroG_az = (wing2.az/*-offset_az*/) - ( cos(pitch_rad) * cos(roll_rad) );
+	zeroG_ax = (wing2.ax/*-offset_ax*/) - (-sin(pitch_rad));
+	zeroG_ay = (wing2.ay/*-offset_ay*/) - ( cos(pitch_rad) * sin(roll_rad) );
+	zeroG_az = (wing2.az/*-offset_az*/) - ( cos(pitch_rad) * cos(roll_rad) );
 	
 	//cout << wing2.pitch << "\t" << wing2.ax << "\t" << -sin(pitch_rad) << endl;
 	
@@ -74,6 +74,13 @@ void HSNavi::estimateVelbyAccel() {
 	//cout << roll << "\t" << pitch << "\t";
 	//cout << vel_ax << "\t" << vel_ay << "\t" << vel_az << endl;
 	
+	
+}
+
+void HSNavi::CF_AccelOpticalFlow() {
+	float cf_err_x = hori_vel_x - vel_vx;
+	float cf_p_val_x = cf_err_x * cf_kp;
+	hori_vel_x += ((zeroG_ax * 9.8f) - cf_p_val_x) * dt;
 	
 }
 
@@ -97,6 +104,10 @@ void HSNavi::landingInitalize() {
 	vel_ax = 0;
 	vel_ay = 0;
 	vel_az = 0;
+	
+	hori_vel_x = 0;
+	hori_vel_y = 0;
+	
 }
 
 
@@ -104,6 +115,8 @@ HSNavi::HSNavi() {
 	kp = 0.0f;//40.0f;
 	ki = 0.0f;
 	kd = 15.0f;
+	
+	cf_kp = 2.0f;
 	
 }
 

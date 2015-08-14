@@ -26,7 +26,7 @@
 
 //#define WIRELESS_DEBUGGING
 
-#define LOOP_TIME 10 // [ms]
+#define LOOP_TIME 20 // [ms]
 #define SERIAL_TIME 50
 
 /////////////////////////////////////
@@ -49,7 +49,6 @@ using namespace std;
 //void *thread_serial(void *arg);
 //void *thread_cv(void *arg);
 
-double getVelocitybyRotate(double angularVelocity, double z);	// [deg/s], [m]
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -107,20 +106,24 @@ int main(int argc, char** argv){
 		//cout << roll << ", " << pitch << ", " << az << ", " << endl;
 		hsNavi.setParameters(wingwing2, LOOP_TIME/1000.0f);
 		hsNavi.estimateVelbyAccel();
+		hsNavi.CF_AccelOpticalFlow();
 		//hsNavi.velocityController(0.0f, 0.0f);
 		hsNavi.updateCMDdata();
 		
-		cout << hsNavi.vel_ax << "\t" << hsNavi.vel_ay << "\t" 
-			<< hsNavi.vel_vy << "\t" << hsNavi.vel_vx << endl;
+		
 			
-		//double rollVelocity = (roll - lastRoll) / (LOOP_TIME / 1000.0);
-		//double pitchVelocity = (pitch - lastPitch) / (LOOP_TIME / 1000.0);
+		
 		//getVelocitybyRotate( rollVelocity, alt/100.0 );
 		//getVelocitybyRotate( pitchVelocity, alt/100.0 );
 		
+		
+		
+		
+		
+			
 		//cout << "roll velocity : " << (double)getVelocitybyRotate( rollVelocity, alt/100.0 ) 
 		//	<< "\tpitch velocity : " << (double)getVelocitybyRotate( pitchVelocity, alt/100.0 ) << endl;
-
+		
 		
 		//make profile
 		
@@ -164,6 +167,3 @@ int main(int argc, char** argv){
 	return 0;
 }
 
-double getVelocitybyRotate(double angularVelocity, double z) {	// [deg/s], [m]
-	return tan( angularVelocity / 57.23 ) * z ;
-}
