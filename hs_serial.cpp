@@ -87,7 +87,9 @@ int SerialhsWing::recvPacket(signed char* data) {
 		//cout << serial_len << " : Serial Buffer is Full" << endl;
 		return 9999;
 	}
+	
 	read(fd, serial_buf, serial_len);
+	
 	memcpy( &buffer[0], &buffer[serial_len], HS_BUFFER_LENGTH-serial_len );
 	memcpy( &buffer[HS_BUFFER_LENGTH-serial_len], &serial_buf[0], serial_len );
 	

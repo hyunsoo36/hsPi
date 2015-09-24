@@ -4,7 +4,7 @@
 
 using namespace std;
 
-#define HS_BUFFER_LENGTH 18
+#define HS_BUFFER_LENGTH 24
 
 // Minimum of packet size is (data size + 3).
 // Additional sizes(3) are headers and tail bytes.
@@ -15,9 +15,9 @@ using namespace std;
 #define HS_PACKET_HEADER2 0xFE
 #define HS_PACKET_TAIL 0xFF
 
-#define HS_RECV_DATA_LENGTH		14
 
-// Use odroid GPIO using WiringPi Lib.
+
+// Used odroid GPIO using WiringPi Lib.
 #define SERIAL_LED 7
 
 class SerialhsWing {

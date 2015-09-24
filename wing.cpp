@@ -48,7 +48,7 @@ using namespace std;
 //void *thread_udp(void *arg);
 //void *thread_serial(void *arg);
 //void *thread_cv(void *arg);
-
+void generateFileName(char *f_name);
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -66,7 +66,7 @@ extern Phone_data phone2;
 
 int main(int argc, char** argv){
 	
-	int fd, data;
+	int data;
 	pthread_t udp_thread, serial_thread, cv_thread;
 	
 	// UDP waiting
@@ -75,6 +75,12 @@ int main(int argc, char** argv){
 	//		delay(50);
 	//}
 	
+	delay(1000);
+	
+	FILE *fp;
+	char f_name[100];
+	generateFileName(f_name);
+	fp = fopen(f_name, "w");
 	
 	
 	// thread
@@ -106,13 +112,28 @@ int main(int argc, char** argv){
 		//cout << roll << ", " << pitch << ", " << az << ", " << endl;
 		hsNavi.setParameters(wingwing2, LOOP_TIME/1000.0f);
 		hsNavi.estimateVelbyAccel();
-		hsNavi.CF_AccelOpticalFlow();
-		//hsNavi.velocityController(0.0f, 0.0f);
+		hsNavi.CF_velocity();
+		hsNavi.velocityController(phone2.pitch_sp/20.0f, -phone2.roll_sp/20.0f);
+		
 		hsNavi.updateCMDdata();
 		
 		
-			
+		hsNavi.estimateLocalPosition();
 		
+		//fprintf(fp, "%4.2f\t%4.2f\t%4.2f\t%4.2f\n",
+		//		hsNavi.local_pos_x, hsNavi.local_pos_y, hsNavi.hori_vel_x, hsNavi.hori_vel_y);
+		fprintf(fp, "%4.2f\t%4.2f\t%4.2f\t%4.2f\n",
+				hsNavi.hori_vel_x, hsNavi.vel_x_lpf, hsNavi.sp_x_lpf, hsNavi.pid_x);
+				
+		cout << hsNavi.hori_vel_x;
+		cout << "\t";
+		cout << hsNavi.vel_x_lpf;
+		cout << "\t";
+		cout << hsNavi.sp_x_lpf;
+		cout << "\t";
+		cout << hsNavi.pid_x;
+		cout << endl;
+	
 		//getVelocitybyRotate( rollVelocity, alt/100.0 );
 		//getVelocitybyRotate( pitchVelocity, alt/100.0 );
 		
@@ -167,3 +188,20 @@ int main(int argc, char** argv){
 	return 0;
 }
 
+void generateFileName(char *f_name) {
+	
+	for(int i=1; i<100; i++) {
+		sprintf(f_name, "../data/%d.txt", i);
+		if( access(f_name, 0) == -1 ) {	// file is not exsit
+			break;
+		}
+		
+	}
+	
+	//time_t timer;
+	//timer = time(NULL);
+	//struct tm *t = localtime(&timer);
+	//sprintf(f_name, "/tmp/flight_data%02d%02d%02d_%02d%02d%02d.txt", 
+		//(t->tm_year+1900)%100, t->tm_mon+1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+ 
+}

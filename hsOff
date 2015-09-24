@@ -1,0 +1,7 @@
+
+pid=`ps -ef | grep "wing" | grep -v 'grep' | awk '{print $2}'`
+
+echo $pid
+
+kill $pid
+

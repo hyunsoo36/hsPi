@@ -13,15 +13,37 @@ float offset_roll=0, offset_pitch=0;
 
 Command_data cmd_data;
 
+
+void HSNavi::estimateLocalPosition() {
+	local_pos_x += hori_vel_x * dt;
+	local_pos_y += hori_vel_y * dt;
+	/*
+	cout << local_pos_x;
+	cout << "\t";
+	cout << local_pos_y;
+	cout << "\t";
+	cout << hori_vel_x;
+	cout << "\t";
+	cout << hori_vel_y;
+	cout << endl;
+	*/
+}
+
+
 void HSNavi::velocityController(float sp_x, float sp_y) {
-	vel_ax_lpf = vel_ax_lpf * 0.95f + vel_ax * 0.05f;
-	vel_ay_lpf = vel_ay_lpf * 0.95f + vel_ay * 0.05f;
+	sp_x_lpf = sp_x_lpf * 0.8f + sp_x * 0.2f;
+	sp_y_lpf = sp_y_lpf * 0.8f + sp_y * 0.2f;
 	
-	err_x = sp_x - vel_ax_lpf;
-	err_y = -(sp_y - vel_ay_lpf);
+	vel_x_lpf = vel_x_lpf * 0.50f + hori_vel_x * 0.50f;
+	vel_y_lpf = vel_y_lpf * 0.50f + hori_vel_y * 0.50f;
+	
+	err_x = sp_x_lpf - vel_x_lpf;
+	err_y = -(sp_y_lpf - vel_y_lpf);
 	
 	float p_x = err_x * kp;
 	float p_y = err_y * kp;
+	
+	
 	
 	float d_x = (err_x - err_x_last) * kd / dt;
 	float d_y = (err_y - err_y_last) * kd / dt;
@@ -33,13 +55,13 @@ void HSNavi::velocityController(float sp_x, float sp_y) {
 	err_x_last = err_x;
 	err_y_last = err_y;
 	/*
-	cout << vel_ax;
+	cout << hori_vel_x;
 	cout << "\t";
-	cout << vel_ax_lpf;
+	cout << vel_x_lpf;
 	cout << "\t";
 	cout << p_x;
 	cout << "\t";
-	cout << d_x;
+	cout << sp_x;
 	cout << "\t";
 	cout << pid_x;
 	cout << endl;
@@ -77,16 +99,34 @@ void HSNavi::estimateVelbyAccel() {
 	
 }
 
-void HSNavi::CF_AccelOpticalFlow() {
-	float cf_err_x = hori_vel_x - vel_vx;
+void HSNavi::CF_velocity() {
+	
+	calcRotateVelocity();
+	
+	float cf_err_x = hori_vel_x - (vel_vx - (-vel_rx));
 	float cf_p_val_x = cf_err_x * cf_kp;
 	hori_vel_x += ((zeroG_ax * 9.8f) - cf_p_val_x) * dt;
 	
+	float cf_err_y = hori_vel_y - (vel_vy - (vel_ry));
+	float cf_p_val_y = cf_err_y * cf_kp;
+	hori_vel_y += ((zeroG_ay * 9.8f) - cf_p_val_y) * dt;
+	/*
+	cout << hori_vel_x << "\t";
+	cout << vel_vx << "\t";
+	cout << vel_rx << "\t";
+	cout << vel_ax << "\t";
+	cout << endl;
+	*/
 }
 
 void HSNavi::setOpticalFlowResult(float x, float y) {
 	vel_vx = x;
 	vel_vy = y;
+}
+void HSNavi::calcRotateVelocity() {
+	
+	vel_rx = sin( wing2.gy / 57.23 ) * (wing2.alt*0.01f);
+	vel_ry = sin( wing2.gx / 57.23 ) * (wing2.alt*0.01f);
 }
 
 void HSNavi::updateCMDdata() {
@@ -108,15 +148,31 @@ void HSNavi::landingInitalize() {
 	hori_vel_x = 0;
 	hori_vel_y = 0;
 	
+	pid_y = 0;
+	pid_x = 0;
+	
+	vel_vx = 0;
+	vel_vy = 0;
+	
+	local_pos_x = 0;
+	local_pos_y = 0;
+	
+	sp_x_lpf = 0;
+	sp_y_lpf = 0;
+	
 }
 
 
 HSNavi::HSNavi() {
-	kp = 0.0f;//40.0f;
+	kp = 40.0f;
 	ki = 0.0f;
-	kd = 15.0f;
+	kd = 0.0f;//12.0f;
 	
-	cf_kp = 2.0f;
+	cf_kp = 10.0f;
 	
+}
+
+double getVelocitybyRotate(double angularVelocity, double z) {	// [deg/s], [m]
+	return sin( angularVelocity / 57.23 ) * z ;
 }
 

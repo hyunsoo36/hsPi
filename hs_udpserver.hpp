@@ -20,10 +20,10 @@ private:
 	int sd;		// Socket descriptor
 	int nr;		// Number of bytes received
 
-	char buffer[20];						// Data buffer
-	struct sockaddr_in serverAddr;	// Socket address
-	struct sockaddr_in clientAddr;	// Client address
-	socklen_t clAddrLen;							// Length of client Address
+	char buffer[20];					// Data buffer
+	struct sockaddr_in serverAddr;		// Socket address
+	struct sockaddr_in clientAddr;		// Client address
+	socklen_t clAddrLen;				// Length of client Address
 	
 public:
 	UDPServer();

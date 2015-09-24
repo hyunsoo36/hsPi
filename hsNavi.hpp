@@ -18,12 +18,16 @@ public:
 	float err_x, err_x_last;
 	float err_y, err_y_last;
 	float kp, ki, kd;
-	float vel_ax, vel_ay, vel_az;	// velocity using accelerometer. [m/s]
+	float vel_ax, vel_ay, vel_az;	// velocity using a accelerometer. [m/s]
 	float zeroG_ax, zeroG_ay, zeroG_az;
 	float pid_x, pid_y;
-	float vel_vx, vel_vy;			// velocity using vertical camera. [m/s]
+	float vel_vx, vel_vy;			// velocity using a vertical camera. [m/s]
+	float vel_rx, vel_ry;			// velocity using a gyro sensor. [m/s]
 	
-	double vel_ax_lpf, vel_ay_lpf, vel_az_lpf;
+	float local_pos_x, local_pos_y;
+	
+	double vel_x_lpf, vel_y_lpf, vel_z_lpf;
+	float sp_x_lpf, sp_y_lpf;
 	
 	// cf variable
 	
@@ -38,7 +42,10 @@ public:
 	void landingInitalize();
 	void updateCMDdata();
 	void setOpticalFlowResult(float x, float y);	// be used only optical flow process.
-	void CF_AccelOpticalFlow();
+	void calcRotateVelocity();
+	void CF_velocity();
+	
+	void estimateLocalPosition();
 	
 };
 

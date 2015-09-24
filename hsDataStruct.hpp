@@ -12,6 +12,9 @@ public:
 	float ax;
 	float ay;
 	float az;
+	float gx;
+	float gy;
+	float gz;
 	double lastRoll;
 	double lastPitch;
 };
