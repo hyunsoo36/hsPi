@@ -7,6 +7,8 @@
 // Experimentally, 
 // 0.002 reduced integral drift.
 #define HDR_ACC_I	0.003f
+#define GYRO_VEL_CLIPPING 0.2
+#define INTEGRAL_WINDUP		3.0f
 
 float offset_ax=0, offset_ay=0, offset_az=0;
 float offset_roll=0, offset_pitch=0;
@@ -17,6 +19,11 @@ Command_data cmd_data;
 void HSNavi::estimateLocalPosition() {
 	local_pos_x += hori_vel_x * dt;
 	local_pos_y += hori_vel_y * dt;
+	
+	local_pos_vx += vel_vx * dt;
+	local_pos_vy += vel_vy * dt;
+	
+	
 	/*
 	cout << local_pos_x;
 	cout << "\t";
@@ -40,17 +47,33 @@ void HSNavi::velocityController(float sp_x, float sp_y) {
 	err_x = sp_x_lpf - vel_x_lpf;
 	err_y = -(sp_y_lpf - vel_y_lpf);
 	
-	float p_x = err_x * kp;
-	float p_y = err_y * kp;
+	p_x = err_x * kp;
+	p_y = err_y * kp;
+	
+	if( err_x > 0.2 || err_x < -0.2 ) {
+		integral_x += err_x;
+	}
+	
+	if( err_y > 0.2 || err_y < -0.2 ) {
+		integral_y += err_y;
+	}
+	
+	i_x = integral_x * ki;
+	i_y = integral_y * ki;
+	
+	// integral wind up
+	if( i_x > INTEGRAL_WINDUP ) { i_x = INTEGRAL_WINDUP; }
+	if( i_x < -INTEGRAL_WINDUP ) { i_x = -INTEGRAL_WINDUP; }
+	if( i_y > INTEGRAL_WINDUP ) { i_y = INTEGRAL_WINDUP; }
+	if( i_y < -INTEGRAL_WINDUP ) { i_y = -INTEGRAL_WINDUP; }
 	
 	
+	d_x = (err_x - err_x_last) * kd / dt;
+	d_y = (err_y - err_y_last) * kd / dt;
 	
-	float d_x = (err_x - err_x_last) * kd / dt;
-	float d_y = (err_y - err_y_last) * kd / dt;
 	
-	
-	pid_x = p_x + d_x;
-	pid_y = p_y + d_y;
+	pid_x = p_x + i_x + d_x;
+	pid_y = p_y + i_y + d_y;
 	
 	err_x_last = err_x;
 	err_y_last = err_y;
@@ -102,6 +125,7 @@ void HSNavi::estimateVelbyAccel() {
 void HSNavi::CF_velocity() {
 	
 	calcRotateVelocity();
+	gyroVelClipping();
 	
 	float cf_err_x = hori_vel_x - (vel_vx - (-vel_rx));
 	float cf_p_val_x = cf_err_x * cf_kp;
@@ -110,15 +134,34 @@ void HSNavi::CF_velocity() {
 	float cf_err_y = hori_vel_y - (vel_vy - (vel_ry));
 	float cf_p_val_y = cf_err_y * cf_kp;
 	hori_vel_y += ((zeroG_ay * 9.8f) - cf_p_val_y) * dt;
-	/*
+	
 	cout << hori_vel_x << "\t";
 	cout << vel_vx << "\t";
 	cout << vel_rx << "\t";
 	cout << vel_ax << "\t";
 	cout << endl;
-	*/
+	
 }
-
+void HSNavi::gyroVelClipping() {
+	if((vel_rx < GYRO_VEL_CLIPPING) && (vel_rx > -GYRO_VEL_CLIPPING)) {
+		vel_rx = 0;
+	}else {
+		if( vel_rx >= GYRO_VEL_CLIPPING ) {
+			vel_rx = vel_rx - GYRO_VEL_CLIPPING;
+		}else if( vel_rx <= -GYRO_VEL_CLIPPING ){
+			vel_rx = vel_rx + GYRO_VEL_CLIPPING;
+		}
+	}
+	if((vel_ry < GYRO_VEL_CLIPPING) && (vel_ry > -GYRO_VEL_CLIPPING)) {
+		vel_ry = 0;
+	}else {
+		if( vel_ry >= GYRO_VEL_CLIPPING ) {
+			vel_ry = vel_ry - GYRO_VEL_CLIPPING;
+		}else if( vel_ry <= -GYRO_VEL_CLIPPING ){
+			vel_ry = vel_ry + GYRO_VEL_CLIPPING;
+		}
+	}
+}
 void HSNavi::setOpticalFlowResult(float x, float y) {
 	vel_vx = x;
 	vel_vy = y;
@@ -132,6 +175,11 @@ void HSNavi::calcRotateVelocity() {
 void HSNavi::updateCMDdata() {
 	cmd_data.roll_sp = pid_y;
 	cmd_data.pitch_sp = pid_x;
+	
+}
+void HSNavi::updateCMDdataManual() {
+	cmd_data.roll_sp = sp_y_lpf;
+	cmd_data.pitch_sp = sp_x_lpf;
 	
 }
 
@@ -160,12 +208,15 @@ void HSNavi::landingInitalize() {
 	sp_x_lpf = 0;
 	sp_y_lpf = 0;
 	
+	integral_x = 0;
+	integral_y = 0;
+	
 }
 
 
 HSNavi::HSNavi() {
-	kp = 40.0f;
-	ki = 0.0f;
+	kp = 35.0f;
+	ki = 0.2f;
 	kd = 0.0f;//12.0f;
 	
 	cf_kp = 10.0f;

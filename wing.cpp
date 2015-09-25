@@ -64,6 +64,8 @@ HSNavi hsNavi;
 extern VTOL_data wingwing2;
 extern Phone_data phone2;
 
+double profileTime = 0;
+
 int main(int argc, char** argv){
 	
 	int data;
@@ -113,27 +115,37 @@ int main(int argc, char** argv){
 		hsNavi.setParameters(wingwing2, LOOP_TIME/1000.0f);
 		hsNavi.estimateVelbyAccel();
 		hsNavi.CF_velocity();
-		hsNavi.velocityController(phone2.pitch_sp/20.0f, -phone2.roll_sp/20.0f);
 		
-		hsNavi.updateCMDdata();
+		profileTime += LOOP_TIME / 1000.0;
+		//if(profileTime < 10.0f) {
+			hsNavi.velocityController(phone2.pitch_sp/40.0f, -phone2.roll_sp/40.0f);
+		//}else {
+		//	hsNavi.velocityController(0.6, -phone2.roll_sp/20.0f);
+		//}
 		
+		//hsNavi.updateCMDdata();
+		hsNavi.updateCMDdataManual();
 		
 		hsNavi.estimateLocalPosition();
 		
-		//fprintf(fp, "%4.2f\t%4.2f\t%4.2f\t%4.2f\n",
-		//		hsNavi.local_pos_x, hsNavi.local_pos_y, hsNavi.hori_vel_x, hsNavi.hori_vel_y);
-		fprintf(fp, "%4.2f\t%4.2f\t%4.2f\t%4.2f\n",
-				hsNavi.hori_vel_x, hsNavi.vel_x_lpf, hsNavi.sp_x_lpf, hsNavi.pid_x);
-				
+		fprintf(fp, "%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\n",
+				hsNavi.local_pos_x, hsNavi.local_pos_y, hsNavi.hori_vel_x, hsNavi.hori_vel_y, hsNavi.local_pos_vx, hsNavi.local_pos_vy);
+		//fprintf(fp, "%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\n",
+		//		hsNavi.hori_vel_x, hsNavi.vel_x_lpf, hsNavi.sp_x_lpf, hsNavi.p_x, hsNavi.i_x, hsNavi.pid_x);
+				/*
 		cout << hsNavi.hori_vel_x;
 		cout << "\t";
 		cout << hsNavi.vel_x_lpf;
 		cout << "\t";
 		cout << hsNavi.sp_x_lpf;
 		cout << "\t";
+		cout << hsNavi.p_x;
+		cout << "\t";
+		cout << hsNavi.i_x;
+		cout << "\t";
 		cout << hsNavi.pid_x;
 		cout << endl;
-	
+	*/
 		//getVelocitybyRotate( rollVelocity, alt/100.0 );
 		//getVelocitybyRotate( pitchVelocity, alt/100.0 );
 		

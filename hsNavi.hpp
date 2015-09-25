@@ -17,14 +17,18 @@ public:
 	float dt;
 	float err_x, err_x_last;
 	float err_y, err_y_last;
+	float integral_x, integral_y;
+	
 	float kp, ki, kd;
 	float vel_ax, vel_ay, vel_az;	// velocity using a accelerometer. [m/s]
 	float zeroG_ax, zeroG_ay, zeroG_az;
-	float pid_x, pid_y;
+	float p_x, i_x, d_x, pid_x;
+	float p_y, i_y, d_y, pid_y;
 	float vel_vx, vel_vy;			// velocity using a vertical camera. [m/s]
 	float vel_rx, vel_ry;			// velocity using a gyro sensor. [m/s]
 	
 	float local_pos_x, local_pos_y;
+	float local_pos_vx, local_pos_vy;
 	
 	double vel_x_lpf, vel_y_lpf, vel_z_lpf;
 	float sp_x_lpf, sp_y_lpf;
@@ -41,8 +45,10 @@ public:
 	void velocityController(float sp_x, float sp_y);
 	void landingInitalize();
 	void updateCMDdata();
+	void updateCMDdataManual();
 	void setOpticalFlowResult(float x, float y);	// be used only optical flow process.
 	void calcRotateVelocity();
+	void gyroVelClipping();
 	void CF_velocity();
 	
 	void estimateLocalPosition();

@@ -27,7 +27,7 @@ char robustWindow[] = "Robust Window";
 
 using namespace cv;
 
-double profileTime = 0;
+
 
 double serial_time = 0;
 
