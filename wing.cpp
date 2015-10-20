@@ -69,7 +69,7 @@ double profileTime = 0;
 int main(int argc, char** argv){
 	
 	int data;
-	pthread_t udp_thread, serial_thread, cv_thread;
+	pthread_t udp_thread, serial_thread, cv_thread, file_thread;
 	
 	// UDP waiting
 	//UDPServer *tmp_udp = new UDPServer();
@@ -79,10 +79,7 @@ int main(int argc, char** argv){
 	
 	delay(1000);
 	
-	FILE *fp;
-	char f_name[100];
-	generateFileName(f_name);
-	fp = fopen(f_name, "w");
+	
 	
 	
 	// thread
@@ -100,12 +97,18 @@ int main(int argc, char** argv){
 		cout << "Cannot creating cv thread" << endl;
 		return -1;
 	}
+	
+	if(pthread_create(&file_thread, NULL, thread_file, NULL)) {
+		cout << "Cannot creating cv thread" << endl;
+		return -1;
+	}
+	
 	cout.fill(' ');
 	cout << fixed;
 	cout.precision(3);
 	
 	
-	
+	int vel_ctrl_cnt = 0;
 	
 	while (1)
 	{
@@ -115,23 +118,29 @@ int main(int argc, char** argv){
 		hsNavi.setParameters(wingwing2, LOOP_TIME/1000.0f);
 		hsNavi.estimateVelbyAccel();
 		hsNavi.CF_velocity();
+		hsNavi.estimateLocalPosition();
 		
-		profileTime += LOOP_TIME / 1000.0;
+		//profileTime += LOOP_TIME / 1000.0;
 		//if(profileTime < 10.0f) {
-			hsNavi.velocityController(phone2.pitch_sp/40.0f, -phone2.roll_sp/40.0f);
+			//hsNavi.velocityController(phone2.pitch_sp/40.0f, -phone2.roll_sp/40.0f);
 		//}else {
 		//	hsNavi.velocityController(0.6, -phone2.roll_sp/20.0f);
 		//}
+		vel_ctrl_cnt ++;
+		if( vel_ctrl_cnt >= 10 ) {
+			vel_ctrl_cnt = 0;
+			hsNavi.velocityController(phone2.pitch_sp/40.0f, -phone2.roll_sp/40.0f);
 		
-		//hsNavi.updateCMDdata();
-		hsNavi.updateCMDdataManual();
+			hsNavi.updateCMDdata();
+			//hsNavi.updateCMDdataManual();
+		}
+		//hsNavi.updateCMDdataManual();
 		
-		hsNavi.estimateLocalPosition();
 		
-		fprintf(fp, "%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\n",
-				hsNavi.local_pos_x, hsNavi.local_pos_y, hsNavi.hori_vel_x, hsNavi.hori_vel_y, hsNavi.local_pos_vx, hsNavi.local_pos_vy);
-		//fprintf(fp, "%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\n",
-		//		hsNavi.hori_vel_x, hsNavi.vel_x_lpf, hsNavi.sp_x_lpf, hsNavi.p_x, hsNavi.i_x, hsNavi.pid_x);
+		
+		
+		
+		
 				/*
 		cout << hsNavi.hori_vel_x;
 		cout << "\t";
@@ -200,20 +209,4 @@ int main(int argc, char** argv){
 	return 0;
 }
 
-void generateFileName(char *f_name) {
-	
-	for(int i=1; i<100; i++) {
-		sprintf(f_name, "../data/%d.txt", i);
-		if( access(f_name, 0) == -1 ) {	// file is not exsit
-			break;
-		}
-		
-	}
-	
-	//time_t timer;
-	//timer = time(NULL);
-	//struct tm *t = localtime(&timer);
-	//sprintf(f_name, "/tmp/flight_data%02d%02d%02d_%02d%02d%02d.txt", 
-		//(t->tm_year+1900)%100, t->tm_mon+1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
- 
-}
+

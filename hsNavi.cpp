@@ -14,7 +14,7 @@ float offset_ax=0, offset_ay=0, offset_az=0;
 float offset_roll=0, offset_pitch=0;
 
 Command_data cmd_data;
-
+extern Phone_data phone2;
 
 void HSNavi::estimateLocalPosition() {
 	local_pos_x += hori_vel_x * dt;
@@ -38,8 +38,8 @@ void HSNavi::estimateLocalPosition() {
 
 
 void HSNavi::velocityController(float sp_x, float sp_y) {
-	sp_x_lpf = sp_x_lpf * 0.8f + sp_x * 0.2f;
-	sp_y_lpf = sp_y_lpf * 0.8f + sp_y * 0.2f;
+	sp_x_lpf = sp_x_lpf * 0.7f + sp_x * 0.3f;
+	sp_y_lpf = sp_y_lpf * 0.7f + sp_y * 0.3f;
 	
 	vel_x_lpf = vel_x_lpf * 0.50f + hori_vel_x * 0.50f;
 	vel_y_lpf = vel_y_lpf * 0.50f + hori_vel_y * 0.50f;
@@ -77,7 +77,7 @@ void HSNavi::velocityController(float sp_x, float sp_y) {
 	
 	err_x_last = err_x;
 	err_y_last = err_y;
-	/*
+	
 	cout << hori_vel_x;
 	cout << "\t";
 	cout << vel_x_lpf;
@@ -88,7 +88,7 @@ void HSNavi::velocityController(float sp_x, float sp_y) {
 	cout << "\t";
 	cout << pid_x;
 	cout << endl;
-	*/
+	
 	
 }
 
@@ -134,13 +134,13 @@ void HSNavi::CF_velocity() {
 	float cf_err_y = hori_vel_y - (vel_vy - (vel_ry));
 	float cf_p_val_y = cf_err_y * cf_kp;
 	hori_vel_y += ((zeroG_ay * 9.8f) - cf_p_val_y) * dt;
-	
+	/*
 	cout << hori_vel_x << "\t";
 	cout << vel_vx << "\t";
 	cout << vel_rx << "\t";
 	cout << vel_ax << "\t";
 	cout << endl;
-	
+	*/
 }
 void HSNavi::gyroVelClipping() {
 	if((vel_rx < GYRO_VEL_CLIPPING) && (vel_rx > -GYRO_VEL_CLIPPING)) {
@@ -178,8 +178,8 @@ void HSNavi::updateCMDdata() {
 	
 }
 void HSNavi::updateCMDdataManual() {
-	cmd_data.roll_sp = sp_y_lpf;
-	cmd_data.pitch_sp = sp_x_lpf;
+	cmd_data.roll_sp = phone2.roll_sp;
+	cmd_data.pitch_sp = phone2.pitch_sp;
 	
 }
 
@@ -215,8 +215,8 @@ void HSNavi::landingInitalize() {
 
 
 HSNavi::HSNavi() {
-	kp = 35.0f;
-	ki = 0.2f;
+	kp = 30.0f;
+	ki = 0.0f;//0.2f;
 	kd = 0.0f;//12.0f;
 	
 	cf_kp = 10.0f;

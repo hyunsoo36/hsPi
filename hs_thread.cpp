@@ -346,6 +346,39 @@ void *thread_udp(void *arg) {
 	}
 }
 
+void *thread_file(void *arg) {
+	
+	delay(5000);
+	
+	FILE *fp;
+	char f_name[100];
+	generateFileName(f_name);
+	fp = fopen(f_name, "w");
+	
+	while(1) {
+		
+		//fprintf(fp, "%4.2f\t%4.2f\t%4.2f\n",
+		//		hsNavi.sp_x_lpf, wingwing2.pitch, cmd_data.pitch_sp);
+		//fprintf(fp, "%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\n",
+		//		hsNavi.local_pos_x, hsNavi.local_pos_y, hsNavi.hori_vel_x, hsNavi.hori_vel_y, hsNavi.local_pos_vx, hsNavi.local_pos_vy);
+		fprintf(fp, "%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\t%4.2f\n",
+				hsNavi.hori_vel_x, hsNavi.vel_x_lpf, hsNavi.sp_x_lpf, hsNavi.p_x, hsNavi.i_x, hsNavi.pid_x);
+		
+		delay(20);
+	}
+	
+}
+void generateFileName(char *f_name) {
+	
+	for(int i=1; i<100; i++) {
+		sprintf(f_name, "../data/%d.txt", i);
+		if( access(f_name, 0) == -1 ) {	// file is not exsit
+			break;
+		}
+		
+	}
 
+ 
+}
 
 #endif
