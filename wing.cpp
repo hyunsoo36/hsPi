@@ -1,4 +1,9 @@
 // git test in samsung
+// crash test!!010101010101010101
+
+//02020202020202020
+//03030303030
+//04040404
 /*
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
